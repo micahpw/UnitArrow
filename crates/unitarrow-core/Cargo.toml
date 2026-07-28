@@ -1,0 +1,10 @@
+[package]
+name = "unitarrow-core"
+description = "Unit registry, parsing, dimension algebra, and conversion factors for UnitArrow (name reservation; spec in development)"
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]

@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "unitarrow"
+version = "0.0.1"
+description = "Physical units and quantity semantics for Apache Arrow columns (name reservation; spec in development)"
+readme = "README.md"
+license = "BSD-3-Clause"
+requires-python = ">=3.9"
+
+[project.urls]
+Repository = "https://github.com/unitarrow/unitarrow"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/unitarrow"]

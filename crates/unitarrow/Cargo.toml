@@ -1,0 +1,10 @@
+[package]
+name = "unitarrow"
+description = "Physical units and quantity semantics for Apache Arrow columns (name reservation; spec in development)"
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]

@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/unitarrow-core",
+    "crates/unitarrow",
+    "crates/unitarrow-py",
+    "crates/unitarrow-wasm",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+license = "BSD-3-Clause"
+repository = "https://github.com/unitarrow/unitarrow"

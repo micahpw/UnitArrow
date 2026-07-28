@@ -1,0 +1,8 @@
+{
+  "name": "unitarrow",
+  "version": "0.0.1",
+  "description": "Physical units and quantity semantics for Apache Arrow columns (name reservation; spec in development)",
+  "main": "index.js",
+  "license": "BSD-3-Clause",
+  "repository": { "type": "git", "url": "git+https://github.com/unitarrow/unitarrow.git" }
+}

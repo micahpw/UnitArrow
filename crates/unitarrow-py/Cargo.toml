@@ -1,0 +1,10 @@
+[package]
+name = "unitarrow-py"
+description = "Python bindings for UnitArrow via pyo3-arrow (name reservation; spec in development)"
+readme = "../../README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]

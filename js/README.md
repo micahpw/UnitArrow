@@ -1,5 +1,4 @@
 # UnitArrow
-*Column-level unit metadata for Apache Arrow that survives the wire*
 
 **Physical units and quantity semantics for Apache Arrow columns.**
 Column-level, cross-language, and wire-native: a unit annotates a whole
