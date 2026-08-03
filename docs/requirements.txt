@@ -1,0 +1,8 @@
+# Docs site build. Pinned so CI reproduces the local .venv-docs exactly —
+# a theme minor bump has changed rendered output before.
+#
+# Local setup:
+#   python -m venv .venv-docs && .venv-docs/bin/pip install -r docs/requirements.txt
+mkdocs==1.6.1
+mkdocs-material==9.7.7
+pymdown-extensions==10.21.3
