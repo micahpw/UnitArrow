@@ -1,0 +1,77 @@
+{
+  "fixture_version": 1,
+  "category": "composition",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "5.6"
+    ]
+  },
+  "description": "The two \u00a75.6 embedding modes trade availability, never integrity.",
+  "cases": [
+    {
+      "id": "composition.embedding.001",
+      "spec_ref": "\u00a75.6 embedding",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": [],
+        "embedding": "full"
+      },
+      "expect": {
+        "outcome": "ok",
+        "pin": "sha256:9d03a2ef94eee7a998e7bf40f526b224c3a44d1bbf7b7ad73a5e1bff54aa6dba"
+      },
+      "rationale": "In full mode the provenance block carries registry.source, so the table resolves with no network and survives the constituents disappearing."
+    },
+    {
+      "id": "composition.embedding.002",
+      "spec_ref": "\u00a75.6 embedding",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": [],
+        "embedding": "pin"
+      },
+      "expect": {
+        "outcome": "ok",
+        "pin": "sha256:9d03a2ef94eee7a998e7bf40f526b224c3a44d1bbf7b7ad73a5e1bff54aa6dba"
+      },
+      "rationale": "Pin mode omits registry.source but carries the same hash: integrity is identical, availability is not."
+    },
+    {
+      "id": "composition.embedding.003",
+      "spec_ref": "\u00a75.6 embedding",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": [],
+        "verify": "tampered"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID"
+      },
+      "rationale": "A fetched registry that does not match the pin MUST be refused, not used. This is what the hash buys over a bare URL, and it holds in both embedding modes."
+    }
+  ]
+}

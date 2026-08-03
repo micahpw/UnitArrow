@@ -1,0 +1,189 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.1",
+      "6.3"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "§6.1 left-to-right division binding, and how it forces the shape of canonical form.",
+  "cases": [
+    {
+      "id": "parsing.division.001",
+      "spec_ref": "§6.1, §6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW/h/K"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*K^-1*h^-1",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -4,
+          "temperature": -1
+        }
+      },
+      "rationale": "§6.1: a/b/c is a·b⁻¹·c⁻¹, NOT a/(b/c) = a·b⁻¹·c. Both h and K acquire negative exponents and sort among themselves bytewise (K 0x4B before h 0x68), so the canonical spelling reorders the input."
+    },
+    {
+      "id": "parsing.division.002",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW/h^2"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*h^-2",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -5
+        }
+      },
+      "rationale": "An exponent on a divided term multiplies the negative contribution; the canonical rendering carries the sign in the exponent."
+    },
+    {
+      "id": "parsing.division.003",
+      "spec_ref": "§6.1",
+      "status": "normative",
+      "input": {
+        "unit": "W/K*m^2"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "W*m^2*K^-1",
+        "dimension": {
+          "mass": 1,
+          "length": 4,
+          "time": -3,
+          "temperature": -1
+        }
+      },
+      "rationale": "§6.1 binds division left-to-right: only K's operator is /, so m^2 stays positive. The decided canonical form makes each term's sign explicit in its exponent, which is what eliminated the historical single-slash ambiguity (AMB-001) — compare parsing.division.001, whose input differs by one operator."
+    },
+    {
+      "id": "parsing.division.004",
+      "spec_ref": "§6.1, §6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW*K^-1*h^-1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*K^-1*h^-1",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -4,
+          "temperature": -1
+        }
+      },
+      "rationale": "Idempotence: canonical output fed back in must be unchanged. Input updated to the decided canonical form when AMB-001 was resolved."
+    },
+    {
+      "id": "parsing.division.005",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW*s^-1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*s^-1",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -4
+        }
+      },
+      "rationale": "A negative literal exponent is now the canonical rendering itself. MW/s on input (see parsing.division.009 family) and MW*s^-1 denote one expression and normalize identically."
+    },
+    {
+      "id": "parsing.division.006",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW/s^-1"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "A negative exponent after / is a double negative — read literally it means MW*s. With slashes now input-only sugar for negation, refusing double negation keeps the sugar unambiguous; this is a typo guard, not a canonicalization need. Only the error code (AMB-013) is still pending."
+    },
+    {
+      "id": "parsing.division.007",
+      "spec_ref": "§6.1, §8.1",
+      "status": "normative",
+      "input": {
+        "unit": "s^-1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "s^-1",
+        "dimension": {
+          "time": -1
+        }
+      },
+      "rationale": "A pure inverse is directly spellable under the decided canonical form. This closes AMB-004: §8.1's a/b and §8.5's differentiate can always write their result down."
+    },
+    {
+      "id": "parsing.division.008",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "K^-1*m^-2"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "K^-1*m^-2",
+        "dimension": {
+          "temperature": -1,
+          "length": -2
+        }
+      },
+      "rationale": "All terms negative: the expression is spellable with no leading 1, and the negative terms still sort among themselves bytewise."
+    },
+    {
+      "id": "parsing.division.009",
+      "spec_ref": "§6.1",
+      "status": "normative",
+      "input": {
+        "unit": "1/s"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "s^-1",
+        "dimension": {
+          "time": -1
+        }
+      },
+      "rationale": "The inverse input form: a leading 1 followed by divided terms is legal input (per the AMB-004 ruling) and normalizes to exponent form. Writers never emit it."
+    },
+    {
+      "id": "parsing.division.010",
+      "spec_ref": "§6.1, §6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "1/K/m^2"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "K^-1*m^-2",
+        "dimension": {
+          "temperature": -1,
+          "length": -2
+        }
+      },
+      "rationale": "Multi-term inverse input. Normalizes to the same canonical string as parsing.division.008's literal-exponent spelling — one expression, one canonical form, regardless of which input sugar produced it."
+    }
+  ]
+}

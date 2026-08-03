@@ -1,0 +1,151 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "5.3",
+      "5.4",
+      "6.3"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "The §5.3 three-way split — explicit dimensionless \"1\", untagged, and the runtime-only unknown state — plus per-unit quantities.",
+  "cases": [
+    {
+      "id": "parsing.dimensionless.001",
+      "spec_ref": "§5.2, §6.3 step 4",
+      "status": "normative",
+      "input": {
+        "unit": "1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "1",
+        "dimension": {}
+      },
+      "rationale": "\"1\" is an explicit dimensionless claim and the serialization of the empty product. It is quiet everywhere; untagged is not."
+    },
+    {
+      "id": "parsing.dimensionless.002",
+      "spec_ref": "§6.3 steps 2 and 4",
+      "status": "normative",
+      "input": {
+        "unit": "MW/MW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "1",
+        "dimension": {}
+      },
+      "rationale": "A ratio of like units is a genuine dimensionless claim, reached by cancellation rather than declared. Same canonical form as an authored \"1\"."
+    },
+    {
+      "id": "parsing.dimensionless.003",
+      "spec_ref": "§6.1, §5.3",
+      "status": "normative",
+      "input": {
+        "unit": ""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "The empty string is ungrammatical and is emphatically NOT a spelling of \"1\". Accepting it would let an empty metadata field become a dimensionless claim nobody made — precisely the conflation §5.3 forbids."
+    },
+    {
+      "id": "parsing.dimensionless.004",
+      "spec_ref": "§6.1",
+      "status": "normative",
+      "input": {
+        "unit": "1*MW"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "The literal 1 is legal on input only as the head of the inverse form (1/s, 1/K/m^2). 1*MW would be a second spelling of MW; canonical output never contains a bare 1 except as the whole string. Only the error code is pending."
+    },
+    {
+      "id": "parsing.dimensionless.005",
+      "spec_ref": "§5.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-022"
+      ],
+      "input": {
+        "unit": "pu"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "pu",
+        "dimension": {}
+      },
+      "rationale": "Parsing succeeds with no base present. E_BASE_MISSING is a metadata-validation error, not a parse error — the unit-string parser has no access to the base key and cannot raise it. This case exists to pin that layering, which §5.4 leaves open."
+    },
+    {
+      "id": "parsing.dimensionless.006",
+      "spec_ref": "§5.4, §6.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-022"
+      ],
+      "input": {
+        "unit": "pu*MW"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_AFFINE_COMPOUND"
+      },
+      "rationale": "pu is non-composable for the same reason affine units are: its meaning depends on an external reference (the base) that a compound expression cannot carry. Reusing E_AFFINE_COMPOUND rather than minting a code is a judgement call — §5.4 says nothing about composability at all."
+    },
+    {
+      "id": "parsing.dimensionless.007",
+      "spec_ref": "§5.4",
+      "status": "normative",
+      "input": {
+        "unit": "pu",
+        "base": {
+          "quantity": "core:power",
+          "value": 100,
+          "unit": "MW"
+        }
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "pu",
+        "dimension": {}
+      },
+      "rationale": "The base is column-uniform metadata alongside the unit, not part of the unit string. Its presence changes conversion behavior but not canonical form or dimension."
+    },
+    {
+      "id": "parsing.dimensionless.008",
+      "spec_ref": "§6.3, §1 goal 4",
+      "status": "normative",
+      "input": {
+        "unit": "MW*h/MWh"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*h*MWh^-1",
+        "dimension": {}
+      },
+      "rationale": "The sharpest statement of AMB-012. The dimension vector is empty — this quantity is dimensionless — yet the canonical form is NOT \"1\", because no symbol repeats and step 2 has nothing to merge. Canonical form is symbolic; dimensions are computed. An implementation that reduces this to \"1\" has silently canonicalized the producer's unit choice, which §1 goal 4 forbids."
+    },
+    {
+      "id": "parsing.dimensionless.009",
+      "spec_ref": "§5.3",
+      "status": "normative",
+      "input": {
+        "unit": "unknown"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNKNOWN_UNIT"
+      },
+      "rationale": "\"unknown\" is a runtime taint state and is never written to the wire (§5.3), so it is just an unresolvable symbol like any other. There are three distinct states and only two of them are spellable: \"1\" is a claim of dimensionless, absence of the extension is absence of a claim, and unknown is neither — a checker MUST NOT paper over an untagged column by writing either string."
+    }
+  ]
+}

@@ -12,3 +12,12 @@ version = "0.0.1"
 edition = "2021"
 license = "BSD-3-Clause"
 repository = "https://github.com/unitarrow/unitarrow"
+
+# Roadmap M1 budgets the WASM module at "tens of KB", so the release profile
+# optimises for size. Profiles are only honoured in the workspace root.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

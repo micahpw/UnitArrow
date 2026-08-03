@@ -1,0 +1,520 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://unitarrow.org/conformance/schema/fixture.schema.json",
+ "title": "UnitArrow conformance fixture",
+ "description": "Golden-file format for the UnitArrow conformance suite. See conformance/FIXTURE-FORMAT.md.",
+ "type": "object",
+ "required": [
+  "fixture_version",
+  "category",
+  "spec",
+  "description",
+  "cases"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "$schema": {
+   "type": "string"
+  },
+  "fixture_version": {
+   "const": 1
+  },
+  "category": {
+   "$ref": "#/$defs/category"
+  },
+  "spec": {
+   "type": "object",
+   "required": [
+    "document",
+    "version",
+    "sections"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "document": {
+     "enum": [
+      "unitarrow-spec",
+      "provenance-companion-spec"
+     ]
+    },
+    "version": {
+     "type": "string",
+     "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[0-9A-Za-z.-]+)?$"
+    },
+    "sections": {
+     "type": "array",
+     "minItems": 1,
+     "items": {
+      "type": "string",
+      "pattern": "^[0-9]+(\\.[0-9]+)*$"
+     }
+    }
+   }
+  },
+  "registry": {
+   "type": "string",
+   "pattern": "^[a-z0-9-]+@[0-9]+\\.[0-9]+\\.[0-9]+$",
+   "description": "<name>@<version> of the registry symbols resolve against."
+  },
+  "description": {
+   "type": "string",
+   "minLength": 1
+  },
+  "cases": {
+   "type": "array",
+   "minItems": 1,
+   "items": {
+    "$ref": "#/$defs/case"
+   }
+  }
+ },
+ "$defs": {
+  "category": {
+   "enum": [
+    "parsing",
+    "composition",
+    "factors",
+    "propagation",
+    "wire",
+    "type-functions",
+    "plans",
+    "seals",
+    "closure",
+    "advisories"
+   ]
+  },
+  "errorCode": {
+   "description": "A spec \u00a710 error code. Codes marked PROPOSED are not yet in \u00a710; cases using them must be provisional and blocked on the corresponding AMB entry.",
+   "enum": [
+    "E_UNKNOWN_UNIT",
+    "E_DIM_MISMATCH",
+    "E_UNIT_MISMATCH",
+    "E_AFFINE_COMPOUND",
+    "E_INTERVAL_MISUSE",
+    "E_BASE_MISSING",
+    "E_BASE_MISMATCH",
+    "E_CAST_LOSSY",
+    "E_BAD_PLACEMENT",
+    "E_KIND_UNSUMMABLE",
+    "E_TEMPORAL_MISMATCH",
+    "E_GRAMMAR_VERSION",
+    "E_UNIT_SYNTAX",
+    "E_BAD_METADATA",
+    "E_REGISTRY_INVALID",
+    "E_EXP_RANGE"
+   ]
+  },
+  "warningCode": {
+   "type": "string",
+   "pattern": "^W_[A-Z0-9_]+$"
+  },
+  "dimension": {
+   "type": "object",
+   "description": "Sparse exponent vector over the ten \u00a76.2 base dimensions. Omitted keys are 0; {} is dimensionless.",
+   "additionalProperties": false,
+   "properties": {
+    "length": {
+     "$ref": "#/$defs/exponent"
+    },
+    "mass": {
+     "$ref": "#/$defs/exponent"
+    },
+    "time": {
+     "$ref": "#/$defs/exponent"
+    },
+    "current": {
+     "$ref": "#/$defs/exponent"
+    },
+    "temperature": {
+     "$ref": "#/$defs/exponent"
+    },
+    "amount": {
+     "$ref": "#/$defs/exponent"
+    },
+    "luminosity": {
+     "$ref": "#/$defs/exponent"
+    },
+    "count": {
+     "$ref": "#/$defs/exponent"
+    },
+    "currency": {
+     "$ref": "#/$defs/exponent"
+    },
+    "angle": {
+     "$ref": "#/$defs/exponent"
+    }
+   }
+  },
+  "exponent": {
+   "type": "integer",
+   "minimum": -128,
+   "maximum": 127,
+   "description": "Signed 8-bit per \u00a76.2. Zero is legal but redundant \u2014 prefer omitting the key."
+  },
+  "parsingInput": {
+   "type": "object",
+   "additionalProperties": false,
+   "oneOf": [
+    {
+     "required": [
+      "unit"
+     ],
+     "not": {
+      "required": [
+       "unit_json"
+      ]
+     }
+    },
+    {
+     "required": [
+      "unit_json"
+     ],
+     "not": {
+      "required": [
+       "unit"
+      ]
+     }
+    }
+   ],
+   "properties": {
+    "unit": {
+     "type": "string",
+     "description": "The decoded unit string. May be non-canonical, malformed, or empty."
+    },
+    "unit_json": {
+     "type": "string",
+     "description": "The raw JSON token for the `unit` key exactly as it appears on the wire, INCLUDING its surrounding double quotes, with escape sequences written literally. Because a fixture file is itself JSON, a backslash here is written doubled: \"\\\"\\\\u004dW\\\"\" carries the six-character token \\u004dW. Use this instead of `unit` for any case whose outcome depends on the byte encoding rather than the decoded value (AMB-039).",
+     "pattern": "^\".*\"$"
+    },
+    "base": {
+     "type": "object",
+     "description": "The \u00a75.4 per-unit base block.",
+     "required": [
+      "value",
+      "unit"
+     ],
+     "additionalProperties": false,
+     "properties": {
+      "quantity": {
+       "type": "string"
+      },
+      "value": {
+       "type": "number"
+      },
+      "unit": {
+       "type": "string"
+      }
+     }
+    },
+    "quantity": {
+     "type": "string",
+     "description": "Quantity-kind CURIE, for cases where \u00a76.4 interval routing affects the outcome."
+    }
+   }
+  },
+  "case": {
+   "type": "object",
+   "required": [
+    "id",
+    "spec_ref",
+    "status",
+    "input",
+    "expect"
+   ],
+   "additionalProperties": false,
+   "properties": {
+    "id": {
+     "type": "string",
+     "pattern": "^[a-z-]+\\.[a-z-]+\\.[0-9]{3}$",
+     "description": "<category>.<theme>.<nnn>. Globally unique and stable forever."
+    },
+    "spec_ref": {
+     "type": "string",
+     "minLength": 1
+    },
+    "status": {
+     "enum": [
+      "normative",
+      "provisional"
+     ]
+    },
+    "blocked_on": {
+     "type": "array",
+     "minItems": 1,
+     "items": {
+      "type": "string",
+      "pattern": "^AMB-[0-9]{3}$"
+     }
+    },
+    "mode": {
+     "enum": [
+      "strict",
+      "permissive",
+      "untracked"
+     ]
+    },
+    "grammar": {
+     "type": "integer",
+     "minimum": 1
+    },
+    "input": {
+     "type": "object"
+    },
+    "expect": {
+     "type": "object"
+    },
+    "rationale": {
+     "type": "string"
+    }
+   },
+   "allOf": [
+    {
+     "description": "blocked_on is required iff status is provisional.",
+     "if": {
+      "properties": {
+       "status": {
+        "const": "provisional"
+       }
+      }
+     },
+     "then": {
+      "required": [
+       "blocked_on"
+      ]
+     },
+     "else": {
+      "not": {
+       "required": [
+        "blocked_on"
+       ]
+      }
+     }
+    },
+    {
+     "description": "An ok outcome carries canonical + dimension and no code.",
+     "if": {
+      "properties": {
+       "expect": {
+        "properties": {
+         "outcome": {
+          "const": "ok"
+         }
+        }
+       }
+      },
+      "required": [
+       "expect"
+      ]
+     },
+     "then": {
+      "properties": {
+       "expect": {
+        "type": "object",
+        "required": [
+         "outcome"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "outcome": {
+          "const": "ok"
+         },
+         "canonical": {
+          "type": "string"
+         },
+         "dimension": {
+          "$ref": "#/$defs/dimension"
+         },
+         "warnings": {
+          "type": "array",
+          "items": {
+           "$ref": "#/$defs/warningCode"
+          }
+         },
+         "pin": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "description": "composition: the effective registry's content hash. Asserting it is how \u00a77.5's byte-identical-output requirement becomes testable across languages."
+         },
+         "resolves": {
+          "type": "object",
+          "description": "composition: symbol -> expected resolution in the effective registry.",
+          "additionalProperties": {
+           "type": "object",
+           "additionalProperties": false,
+           "properties": {
+            "factor": {
+             "type": "array",
+             "minItems": 2,
+             "maxItems": 2,
+             "items": {
+              "type": "integer"
+             }
+            },
+            "dimension_name": {
+             "type": "string"
+            },
+            "describes": {
+             "type": [
+              "string",
+              "null"
+             ]
+            },
+            "resolvable": {
+             "type": "boolean"
+            }
+           }
+          }
+         },
+         "composed_from": {
+          "type": "array",
+          "items": {
+           "type": "string"
+          },
+          "description": "composition: constituent names."
+         },
+         "agreed": {
+          "type": "array",
+          "items": {
+           "type": "string"
+          },
+          "description": "composition: symbols several sources defined identically."
+         },
+         "applied": {
+          "type": "array",
+          "items": {
+           "type": "string"
+          },
+          "description": "composition: symbols a ruling settled."
+         },
+         "boundary": {
+          "enum": [
+           "same_pin",
+           "compatible"
+          ],
+          "description": "composition: the \u00a75.6 boundary verdict when a table tagged against another registry is read."
+         },
+         "checked": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "composition: how many symbols the boundary check compared."
+         }
+        }
+       }
+      }
+     }
+    },
+    {
+     "description": "An error outcome carries a code and no canonical/dimension.",
+     "if": {
+      "properties": {
+       "expect": {
+        "properties": {
+         "outcome": {
+          "const": "error"
+         }
+        }
+       }
+      },
+      "required": [
+       "expect"
+      ]
+     },
+     "then": {
+      "properties": {
+       "expect": {
+        "type": "object",
+        "required": [
+         "outcome",
+         "code"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "outcome": {
+          "const": "error"
+         },
+         "code": {
+          "$ref": "#/$defs/errorCode"
+         },
+         "warnings": {
+          "type": "array",
+          "items": {
+           "$ref": "#/$defs/warningCode"
+          }
+         },
+         "names": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+           "type": "string"
+          },
+          "description": "Tokens the diagnostic MUST mention. A content requirement, never a wording one \u2014 bindings phrase errors natively."
+         }
+        }
+       }
+      }
+     }
+    }
+   ]
+  }
+ },
+ "allOf": [
+  {
+   "description": "Parsing fixtures must name a registry and use the parsing input shape, and every successful parse asserts both canonical form and dimension.",
+   "if": {
+    "properties": {
+     "category": {
+      "const": "parsing"
+     }
+    },
+    "required": [
+     "category"
+    ]
+   },
+   "then": {
+    "required": [
+     "registry"
+    ],
+    "properties": {
+     "cases": {
+      "items": {
+       "properties": {
+        "input": {
+         "$ref": "#/$defs/parsingInput"
+        }
+       },
+       "allOf": [
+        {
+         "if": {
+          "properties": {
+           "expect": {
+            "properties": {
+             "outcome": {
+              "const": "ok"
+             }
+            }
+           }
+          },
+          "required": [
+           "expect"
+          ]
+         },
+         "then": {
+          "properties": {
+           "expect": {
+            "required": [
+             "outcome",
+             "canonical",
+             "dimension"
+            ]
+           }
+          }
+         }
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ ]
+}

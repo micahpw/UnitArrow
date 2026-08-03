@@ -1,0 +1,127 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "5.2",
+      "6.1",
+      "6.3"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "AMB-039: escape sequences are prohibited in the unit value. Canonical form fixes one spelling per expression; JSON escapes would give that spelling many byte encodings, so the guarantee has to hold at the encoding layer too.",
+  "cases": [
+    {
+      "id": "parsing.encoding.001",
+      "spec_ref": "§5.2, §6.3",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"MW\""
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -3
+        }
+      },
+      "rationale": "Positive control. Every character legal in a unit string is legal unescaped in JSON, so the canonical form is always writable literally."
+    },
+    {
+      "id": "parsing.encoding.002",
+      "spec_ref": "§5.2",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"\\u004dW\""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_BAD_METADATA"
+      },
+      "rationale": "Decodes to MW, which is canonical — and that is exactly the problem. Accepting this makes the wire bytes something other than a function of the unit, so two producers tagging identical columns would emit different data digests (companion §5.2 step 3)."
+    },
+    {
+      "id": "parsing.encoding.003",
+      "spec_ref": "§5.2",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"MW\\/h\""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_BAD_METADATA"
+      },
+      "rationale": "JSON permits an escaped solidus, so every unit string containing a division would otherwise have two legal encodings. This is the most likely one to appear by accident — several JSON writers escape / by default."
+    },
+    {
+      "id": "parsing.encoding.004",
+      "spec_ref": "§5.2",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"MW\\u002Fh\""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_BAD_METADATA"
+      },
+      "rationale": "A third encoding of MW/h. Two escapes plus the literal form make three byte sequences for one canonical string; the prohibition collapses them to one."
+    },
+    {
+      "id": "parsing.encoding.005",
+      "spec_ref": "§5.2",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"M\\\\W\""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_BAD_METADATA"
+      },
+      "rationale": "An escaped backslash decodes to M\\W, which is also a unit-grammar violation — but the metadata layer rejects it first. The layering matters: E_BAD_METADATA means \"this is not how metadata is written\", E_UNIT_SYNTAX means \"this is not a unit\"."
+    },
+    {
+      "id": "parsing.encoding.006",
+      "spec_ref": "§5.2",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"\\u0001\""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_BAD_METADATA"
+      },
+      "rationale": "A control character cannot be written literally in JSON, so an escape is the only way to smuggle one into a unit value. Prohibiting escapes closes the route entirely rather than enumerating forbidden code points."
+    },
+    {
+      "id": "parsing.encoding.007",
+      "spec_ref": "§5.2",
+      "status": "normative",
+      "input": {
+        "unit_json": "\"\\ud800\""
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_BAD_METADATA"
+      },
+      "rationale": "An unpaired surrogate: valid JSON, and not valid UTF-8 once decoded. §5.2 requires the metadata blob to be UTF-8, so this is doubly wrong — and a reader that decodes before validating may produce a replacement character and carry on."
+    },
+    {
+      "id": "parsing.encoding.008",
+      "spec_ref": "§6.1",
+      "status": "normative",
+      "input": {
+        "unit": "\ufeffMW"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "A byte-order mark written as a literal character, not an escape, so AMB-039 does not reach it. U+FEFF is outside the symbol class, making this a grammar violation rather than a metadata one — the two rules cover different halves of the same hazard."
+    }
+  ]
+}

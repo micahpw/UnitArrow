@@ -1,0 +1,189 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.1",
+      "6.3"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "Canonical-form steps 1 and 2: alias resolution, redundant exponents, idempotence, case sensitivity, and whitespace tolerance.",
+  "cases": [
+    {
+      "id": "parsing.normalization.001",
+      "spec_ref": "§6.3 step 1",
+      "status": "normative",
+      "input": {
+        "unit": "hr"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "h",
+        "dimension": {
+          "time": 1
+        }
+      },
+      "rationale": "Aliases resolve to the canonical symbol and are never emitted. Provisional because §6.3 step 1 requires alias resolution but §7.2's unit schema has no aliases field to record them in."
+    },
+    {
+      "id": "parsing.normalization.002",
+      "spec_ref": "§6.3 step 1",
+      "status": "normative",
+      "input": {
+        "unit": "MW*hr"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*h",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -2
+        }
+      },
+      "rationale": "Alias resolution happens per-symbol, before ordering, so an alias cannot change a term's sort position relative to its canonical form."
+    },
+    {
+      "id": "parsing.normalization.003",
+      "spec_ref": "§6.3",
+      "status": "normative",
+      "input": {
+        "unit": "MW*h"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*h",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -2
+        }
+      },
+      "rationale": "Canonicalization is idempotent. Any implementation where canon(canon(x)) != canon(x) breaks cross-language hashing."
+    },
+    {
+      "id": "parsing.normalization.004",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW^1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -3
+        }
+      },
+      "rationale": "Step 3 omits exponent 1 on output. Whether ^1 is legal on input is not stated; this case assumes it is accepted and normalized rather than rejected."
+    },
+    {
+      "id": "parsing.normalization.005",
+      "spec_ref": "§6.3 steps 2 and 4",
+      "status": "normative",
+      "input": {
+        "unit": "m^0"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "1",
+        "dimension": {}
+      },
+      "rationale": "Step 2 drops zero exponents, leaving the empty product, which step 4 serializes as \"1\". Note this makes m^0 an explicit dimensionless claim (§5.3), not a no-op."
+    },
+    {
+      "id": "parsing.normalization.006",
+      "spec_ref": "§6.1",
+      "status": "normative",
+      "input": {
+        "unit": "mW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "mW",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -3
+        }
+      },
+      "rationale": "Symbols are case-sensitive. mW is a milliwatt and MW is a megawatt — nine orders of magnitude apart. Case folding anywhere in the pipeline is a data-corruption bug, not a convenience."
+    },
+    {
+      "id": "parsing.normalization.007",
+      "spec_ref": "§6.3, §1 goal 4",
+      "status": "normative",
+      "input": {
+        "unit": "MWh"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MWh",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -2
+        }
+      },
+      "rationale": "MWh is one registry symbol; there is nothing to merge or reorder. It does NOT canonicalize to MW*h even though the two are numerically identical — canonicalization normalizes spelling, never the producer's choice of unit (§1 goal 4). See AMB-012 for why this deserves to be said out loud in the spec."
+    },
+    {
+      "id": "parsing.normalization.008",
+      "spec_ref": "§6.1, §6.3",
+      "status": "normative",
+      "input": {
+        "unit": "MW * h"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*h",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -2
+        }
+      },
+      "rationale": "Whitespace around an operator is accepted and normalized away. The operator makes the intent explicit, so a space cannot change the meaning — unlike a space between two bare symbols, which is rejected (parsing.errors.007)."
+    },
+    {
+      "id": "parsing.normalization.009",
+      "spec_ref": "§6.1, §6.3",
+      "status": "normative",
+      "input": {
+        "unit": "  MW  "
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -3
+        }
+      },
+      "rationale": "Leading and trailing whitespace is accepted. The realistic source is a CSV column or a hand-edited config, where a stray space is never a semantic claim."
+    },
+    {
+      "id": "parsing.normalization.010",
+      "spec_ref": "§6.1, §6.3",
+      "status": "normative",
+      "input": {
+        "unit": " 1 / s "
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "s^-1",
+        "dimension": {
+          "time": -1
+        }
+      },
+      "rationale": "Whitespace in the inverse input form, including around the leading `1`. Canonical output never contains whitespace under any of these spellings."
+    }
+  ]
+}

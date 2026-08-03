@@ -1,0 +1,287 @@
+{
+  "fixture_version": 1,
+  "category": "composition",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "7.5"
+    ]
+  },
+  "description": "A contest must be ruled on, by someone with the context, with a stated reason.",
+  "cases": [
+    {
+      "id": "composition.rulings.001",
+      "spec_ref": "\u00a77.5 rule 2",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "bbl",
+          "oil",
+          "water"
+        ]
+      },
+      "rationale": "An unruled contest fails, and the diagnostic must name the symbol and every source defining it \u2014 the specific failure AMB-058 logged against the raw TOML duplicate-key error."
+    },
+    {
+      "id": "composition.rulings.002",
+      "spec_ref": "\u00a77.5 rule 2",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "   "
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "bbl"
+        ]
+      },
+      "rationale": "An empty reason is the same omission with extra steps. The consumer of the published table has no other place to learn why this reading won."
+    },
+    {
+      "id": "composition.rulings.003",
+      "spec_ref": "\u00a77.5 rule 4",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "this deployment is upstream oil production"
+          },
+          {
+            "symbol": "m",
+            "from": "oil",
+            "reason": "no contest here"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "m"
+        ]
+      },
+      "rationale": "A ruling that settles nothing is rejected, symmetric with a stale prefix_collisions entry: it would hide the next real contest."
+    },
+    {
+      "id": "composition.rulings.004",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "gas",
+            "reason": "not a constituent"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "bbl",
+          "gas"
+        ]
+      },
+      "rationale": "A ruling naming a source that is not being composed cannot be applied."
+    },
+    {
+      "id": "composition.rulings.005",
+      "spec_ref": "\u00a77.5 rule 3",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "ok"
+          },
+          {
+            "symbol": "acre_ft",
+            "from": "oil",
+            "reason": "oil does not define this"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "acre_ft"
+        ]
+      },
+      "rationale": "Naming a winner that does not define the symbol would silently keep some other source's definition."
+    },
+    {
+      "id": "composition.rulings.006",
+      "spec_ref": "\u00a77.5 rule 2",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "d1",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"d1\"\nversion = \"1\"\n[dimension.power]\nvector = { mass = 1, length = 2, time = -3 }\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n"
+          },
+          {
+            "name": "d2",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"d2\"\nversion = \"1\"\n[dimension.power]\nvector = { mass = 1, length = 2, time = -4 }\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "power",
+          "d1",
+          "d2"
+        ]
+      },
+      "rationale": "Contests are not confined to units. Two sources disagreeing about a dimension vector is the more dangerous case, since every commensurability check depends on it."
+    },
+    {
+      "id": "composition.rulings.007",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "d1",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"d1\"\nversion = \"1\"\n[dimension.power]\nvector = { mass = 1, length = 2, time = -3 }\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n"
+          },
+          {
+            "name": "d2",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"d2\"\nversion = \"1\"\n[dimension.power]\nvector = { mass = 1, length = 2, time = -4 }\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "power",
+            "from": "d1",
+            "reason": "d2 has a typo in the time exponent"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "applied": [
+          "power"
+        ],
+        "agreed": [
+          "W"
+        ]
+      },
+      "rationale": "A ruled dimension contest composes, and the units that agreed still merge silently."
+    },
+    {
+      "id": "composition.rulings.008",
+      "spec_ref": "\u00a77.5 rule 2",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "q1",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"q1\"\nversion = \"1\"\n[dimension.power]\nvector = { mass = 1, length = 2, time = -3 }\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n[quantity.\"core:power\"]\ninterval = true\n"
+          },
+          {
+            "name": "q2",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"q2\"\nversion = \"1\"\n[dimension.power]\nvector = { mass = 1, length = 2, time = -3 }\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n[quantity.\"core:power\"]\ninterval = false\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "core:power",
+          "q1",
+          "q2"
+        ]
+      },
+      "rationale": "Quantity kinds are contested the same way. `interval` disagreement changes what arithmetic is legal (\u00a76.4)."
+    }
+  ]
+}

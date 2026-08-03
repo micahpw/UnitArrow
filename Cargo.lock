@@ -17,3 +17,6 @@ version = "0.0.1"
 [[package]]
 name = "unitarrow-wasm"
 version = "0.0.1"
+dependencies = [
+ "unitarrow-core",
+]
