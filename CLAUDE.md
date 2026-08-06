@@ -26,8 +26,17 @@ the live playground on the docs site. `unitarrow`, `unitarrow-py`, `python/`,
 and `js/` are still name-reservation stubs.
 
 ```bash
-cargo test                            # 90 tests: unit, conformance, doctests
+cargo test                            # unit, conformance, composition, repo invariants, doctests
 ```
+
+CI (`.github/workflows/ci.yml`) runs that plus `clippy -D warnings`, the wasm
+build, fixture validation against `conformance/schema/fixture.schema.json`, and
+a determinism check on the docs generator. `tests/repo_invariants.rs` guards the
+documents: register contiguity, the summary tally, status lines that contradict
+their bodies, `blocked_on` references, every entry demonstrating its problem,
+spec TOML validity, and one spec version everywhere. **Each of those is a defect
+that already happened** — the tally read 60 while there were 67, and 17 status
+lines read `open` over recorded rulings.
 
 ```bash
 cargo run -p unitarrow-core --bin unitarrow-gen-docs && .venv-docs/bin/mkdocs serve
