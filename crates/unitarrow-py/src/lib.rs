@@ -136,6 +136,13 @@ impl Registry {
         Ok(m.to_json())
     }
 
+    /// A bare column reference carrying a unit — the leaf of an expression.
+    fn col(&self, name: &str, unit: &str) -> PyResult<Fragment> {
+        unitarrow_core::expr::column(name, unit, &self.inner)
+            .map(|f| Fragment { sql: f.sql, unit: f.unit })
+            .map_err(err)
+    }
+
     /// Spellings this registry refuses on purpose, and why.
     fn refusals(&self) -> Vec<(String, String, Vec<String>)> {
         self.inner
@@ -215,6 +222,79 @@ impl Conversion {
     }
 }
 
+/// A typed expression: SQL text plus the unit its result carries.
+///
+/// Composed with the ordinary Python operators, so a plan reads like the
+/// arithmetic it describes. Nothing here touches data — the engine runs the
+/// SQL, and the `unit` is what the output column gets tagged with.
+#[pyclass(module = "unitarrow", frozen, get_all, skip_from_py_object)]
+#[derive(Clone)]
+pub struct Fragment {
+    sql: String,
+    unit: String,
+}
+
+fn core_frag(f: &Fragment) -> unitarrow_core::Fragment {
+    unitarrow_core::Fragment { sql: f.sql.clone(), unit: f.unit.clone() }
+}
+
+fn wrap(f: unitarrow_core::Fragment) -> Fragment {
+    Fragment { sql: f.sql, unit: f.unit }
+}
+
+#[pymethods]
+impl Fragment {
+    /// Convert to another unit, emitting the scaling arithmetic.
+    fn to(&self, unit: &str, registry: &Registry) -> PyResult<Fragment> {
+        unitarrow_core::expr::convert(
+            &core_frag(self),
+            unit,
+            &registry.inner,
+            unitarrow_core::Dialect::SQL,
+        )
+        .map(wrap)
+        .map_err(err)
+    }
+
+    fn mul(&self, other: &Fragment, registry: &Registry) -> PyResult<Fragment> {
+        unitarrow_core::expr::mul(&core_frag(self), &core_frag(other), &registry.inner)
+            .map(wrap)
+            .map_err(err)
+    }
+
+    fn div(&self, other: &Fragment, registry: &Registry) -> PyResult<Fragment> {
+        unitarrow_core::expr::div(&core_frag(self), &core_frag(other), &registry.inner)
+            .map(wrap)
+            .map_err(err)
+    }
+
+    fn add(&self, other: &Fragment, registry: &Registry) -> PyResult<Fragment> {
+        unitarrow_core::expr::add(
+            &core_frag(self),
+            &core_frag(other),
+            &registry.inner,
+            unitarrow_core::Dialect::SQL,
+        )
+        .map(wrap)
+        .map_err(err)
+    }
+
+    fn sub(&self, other: &Fragment, registry: &Registry) -> PyResult<Fragment> {
+        unitarrow_core::expr::sub(
+            &core_frag(self),
+            &core_frag(other),
+            &registry.inner,
+            unitarrow_core::Dialect::SQL,
+        )
+        .map(wrap)
+        .map_err(err)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("<Fragment {} :: {}>", self.sql, self.unit)
+    }
+}
+
 /// Parse a §5.2 metadata value read from a column.
 #[pyfunction]
 fn parse_metadata(json: &str) -> PyResult<std::collections::BTreeMap<String, String>> {
@@ -246,6 +326,7 @@ fn spec_version() -> &'static str {
 fn _unitarrow(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Registry>()?;
     m.add_class::<Conversion>()?;
+    m.add_class::<Fragment>()?;
     m.add_function(wrap_pyfunction!(parse_metadata, m)?)?;
     m.add_function(wrap_pyfunction!(extension_name, m)?)?;
     m.add_function(wrap_pyfunction!(spec_version, m)?)?;

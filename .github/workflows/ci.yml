@@ -146,7 +146,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install the test tooling
-        run: pip install pytest pyarrow pandas
+        run: pip install pytest pyarrow pandas duckdb
 
       # `pip install ./python` rather than `maturin develop`: develop requires
       # an activated virtualenv, which a setup-python runner does not have.

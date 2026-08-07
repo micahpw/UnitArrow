@@ -157,3 +157,40 @@ boundary:
 
 Each assertion about `tag()` was mutation-tested: the behaviour was broken
 deliberately and the test confirmed to fail.
+
+## Unit-aware expressions
+
+`Plan` computes schemas, never values. It decides whether an operation is legal,
+what unit the result carries, and what arithmetic the engine must perform — then
+hands the SQL to DuckDB (or anything else) and tags the result from the plan.
+
+```python
+plan   = unitarrow.Plan.from_table(tagged, reg)   # units read from the tags
+energy = plan["p_mw"] * plan["hours"]             # MW*h, computed
+out    = con.sql(f"SELECT {energy.sql} AS e FROM t").arrow().read_all()
+out    = unitarrow.tag(out, {"e": energy.unit}, reg)
+```
+
+**Tags do not have to survive the engine.** DuckDB, pandas and polars all
+discard Arrow field metadata, but the output unit is known *before* the query
+runs, so the result is retagged from the plan rather than recovered from the
+input. That turns a mitigation into a non-issue.
+
+What the emitted SQL gets right, and an ad-hoc `* 1000` would not:
+
+| | Emitted |
+|---|---|
+| scaling | `(p_mw * 1000)` |
+| affine — an intercept, not a factor | `(t_c + 5463.0 / 20)` |
+| irrational — π stays symbolic | `(theta_deg * pi() / 180)` |
+| exact rationals stay rational | `(q * 52752792631 / 50000000)` |
+| `+` across units emits the coercion | `(p_mw + (small / 1000))` |
+
+The last two are the interesting ones. Emitting the rational rather than a
+decimal is an **auditability** choice, not a precision one — measured over 20k
+values per factor, both forms sit within one ulp of exact rational arithmetic,
+but `* 52752792631 / 50000000` shows a reviewer the registry's definition where
+`* 1055.05585262` shows them a rounding. And emitting the coercion means the
+engine adds comparable numbers rather than raw ones.
+
+Adding across dimensions raises before any SQL exists.
