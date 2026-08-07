@@ -1,0 +1,1756 @@
+# UnitArrow registry — generated from UDUNITS-2. DO NOT EDIT BY HAND.
+#
+#     python3 tools/import_udunits.py > registries/udunits.toml
+#
+# Source: Unidata/UDUNITS-2 @ 81307f4fd0f8 (2026-08-07), BSD-style licence,
+# vendored as a submodule at vendor/udunits-2 and used as a codegen input.
+# The generated file is committed and reviewed, because §7 treats a registry
+# as data every conversion in a deployment flows from — `git diff` is the
+# review.
+#
+# TWO DELIBERATE DEPARTURES FROM UPSTREAM, both recorded in the register:
+#
+#   `rad` is dimensionless in UDUNITS, following SI. Here angle is a base
+#   dimension, because with a dimensionless radian `rad/s` and `Hz` share
+#   {time:-1} and a 2*pi error passes every dimensional check (AMB-066).
+#
+#   `pi` is stored upstream as a truncated 30-digit decimal. Inheriting
+#   that would put a rounding where §7.2 promises a definition, so it is
+#   carried as an exact exponent on the factor instead (AMB-066).
+#
+# 265 units imported, 12 excluded. Every exclusion is listed
+# at the foot of this file rather than dropped silently.
+
+[registry]
+schema_version = 1
+name = "udunits"
+version = "2026-08-07"
+
+# ---------------------------------------------------------------------------
+# Dimensions
+# ---------------------------------------------------------------------------
+
+[dimension.acceleration]
+vector = { length = 1, time = -2 }
+
+[dimension.admittance]
+vector = { current = 2, length = -2, mass = -1, time = 3 }
+
+[dimension.angular_frequency]
+vector = { angle = 1, time = -1 }
+
+[dimension.area]
+vector = { length = 2 }
+
+[dimension.capacitance]
+vector = { current = 2, length = -2, mass = -1, time = 4 }
+
+[dimension.charge]
+vector = { current = 1, time = 1 }
+
+[dimension.d_amount1_lengthm2]
+vector = { amount = 1, length = -2 }
+
+[dimension.d_amount1_timem1]
+vector = { amount = 1, time = -1 }
+
+[dimension.d_amountm1]
+vector = { amount = -1 }
+
+[dimension.d_angle2]
+vector = { angle = 2 }
+
+[dimension.d_angle2_lengthm2_luminosity1]
+vector = { angle = 2, length = -2, luminosity = 1 }
+
+[dimension.d_angle2_luminosity1]
+vector = { angle = 2, luminosity = 1 }
+
+[dimension.d_current1_lengthm1]
+vector = { current = 1, length = -1 }
+
+[dimension.d_current1_massm1_time1]
+vector = { current = 1, mass = -1, time = 1 }
+
+[dimension.d_currentm1_length2_mass1_timem2]
+vector = { current = -1, length = 2, mass = 1, time = -2 }
+
+[dimension.d_currentm1_mass1_timem2]
+vector = { current = -1, mass = 1, time = -2 }
+
+[dimension.d_length1_massm1_time1]
+vector = { length = 1, mass = -1, time = 1 }
+
+[dimension.d_length2_massm1_temperature1_timem1]
+vector = { length = 2, mass = -1, temperature = 1, time = -1 }
+
+[dimension.d_length2_timem1]
+vector = { length = 2, time = -1 }
+
+[dimension.d_length2_timem2]
+vector = { length = 2, time = -2 }
+
+[dimension.d_length3_timem1]
+vector = { length = 3, time = -1 }
+
+[dimension.d_lengthm1]
+vector = { length = -1 }
+
+[dimension.d_lengthm1_mass1]
+vector = { length = -1, mass = 1 }
+
+[dimension.d_lengthm1_mass1_timem1]
+vector = { length = -1, mass = 1, time = -1 }
+
+[dimension.d_lengthm1_time1]
+vector = { length = -1, time = 1 }
+
+[dimension.d_lengthm2_luminosity1]
+vector = { length = -2, luminosity = 1 }
+
+[dimension.d_lengthm2_mass1_timem2]
+vector = { length = -2, mass = 1, time = -2 }
+
+[dimension.d_mass1_timem2]
+vector = { mass = 1, time = -2 }
+
+[dimension.d_massm1_temperature1_time3]
+vector = { mass = -1, temperature = 1, time = 3 }
+
+[dimension.dimensionless]
+vector = { }
+
+[dimension.energy]
+vector = { length = 2, mass = 1, time = -2 }
+
+[dimension.force]
+vector = { length = 1, mass = 1, time = -2 }
+
+[dimension.frequency]
+vector = { time = -1 }
+
+[dimension.impedance]
+vector = { current = -2, length = 2, mass = 1, time = -3 }
+
+[dimension.inductance]
+vector = { current = -2, length = 2, mass = 1, time = -2 }
+
+[dimension.power]
+vector = { length = 2, mass = 1, time = -3 }
+
+[dimension.pressure]
+vector = { length = -1, mass = 1, time = -2 }
+
+[dimension.velocity]
+vector = { length = 1, time = -1 }
+
+[dimension.voltage]
+vector = { current = -1, length = 2, mass = 1, time = -3 }
+
+[dimension.volume]
+vector = { length = 3 }
+
+# ---------------------------------------------------------------------------
+# Units
+# ---------------------------------------------------------------------------
+
+[unit.A]
+dimension = "current"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["ampere"]
+display = { long = "ampere" }
+provenance = { system = "udunits", source = "udunits2-base.xml@81307f4fd0f8" }
+
+[unit.Bd]
+dimension = "frequency"
+factor = [1, 1]
+aliases = ["baud", "bps"]
+display = { long = "baud" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: Hz" }
+
+[unit.Bq]
+dimension = "frequency"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["becquerel"]
+display = { long = "becquerel" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: 1/s" }
+
+[unit.C]
+dimension = "charge"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["coulomb"]
+display = { long = "coulomb" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: s.A" }
+
+[unit.C12_faraday]
+dimension = "charge"
+factor = [9648531, 100]
+aliases = ["faraday"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.648531e4 C" }
+
+[unit.Canadian_liquid_gallon]
+dimension = "volume"
+factor = [454609, 100000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.546090e-3 m^3" }
+
+[unit.Ci]
+dimension = "frequency"
+factor = [37000000000, 1]
+aliases = ["curie"]
+display = { long = "curie" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 3.7e10 Bq" }
+
+[unit.DU]
+dimension = "d_amount1_lengthm2"
+factor = [2231, 5000000]
+aliases = ["dobson"]
+display = { long = "dobson" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 446.2 micromoles/meter^2" }
+
+[unit.EC_therm]
+dimension = "energy"
+factor = [105506000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.05506e8 J" }
+
+[unit.F]
+dimension = "capacitance"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["farad"]
+display = { long = "farad" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: C/V" }
+
+[unit.Gregorian_year]
+dimension = "time"
+factor = [31556952, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 365.2425 day" }
+
+[unit.Gy]
+dimension = "d_length2_timem2"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["gray"]
+display = { long = "gray" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: J/kg" }
+
+[unit.H]
+dimension = "inductance"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["henry"]
+display = { long = "henry" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: Wb/A" }
+
+[unit.H2O]
+dimension = "d_lengthm2_mass1_timem2"
+factor = [196133, 20]
+aliases = ["conventional_water", "h2o", "water"]
+display = { long = "conventional_water" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gravity 1000 kg/m^3" }
+
+[unit.Hg]
+dimension = "d_lengthm2_mass1_timem2"
+factor = [26664477483, 200000]
+aliases = ["conventional_mercuries", "conventional_mercury", "mercuries_0C", "mercuries_32F", "mercury_0C", "mercury_32F"]
+display = { long = "mercury_0C" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gravity 13595.10 kg/m^3" }
+
+[unit.Hz]
+dimension = "frequency"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["hertz"]
+display = { long = "hertz" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: 1/s" }
+
+[unit.IT_Btu]
+dimension = "energy"
+factor = [52752792631, 50000000]
+aliases = ["Btu", "Btus", "IT_Btus"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.05505585262e3 J" }
+
+[unit.J]
+dimension = "energy"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["joule"]
+display = { long = "joule" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: N.m" }
+
+[unit.Julian_year]
+dimension = "time"
+factor = [31557600, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 365.25 day" }
+
+[unit.K]
+dimension = "temperature"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["kelvin"]
+display = { long = "kelvin" }
+provenance = { system = "udunits", source = "udunits2-base.xml@81307f4fd0f8" }
+
+[unit.L]
+dimension = "volume"
+factor = [1, 1000]
+prefixes = "si"
+aliases = ["l", "liter", "litre"]
+display = { long = "liter" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: dm^3" }
+
+[unit.N]
+dimension = "force"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["newton"]
+display = { long = "newton" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: m.kg/s^2" }
+
+[unit.Oe]
+dimension = "d_current1_lengthm1"
+factor = [7957747, 100000]
+aliases = ["oersted"]
+display = { long = "oersted" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.957747e1 A/m" }
+
+[unit.PVU]
+dimension = "d_length2_massm1_temperature1_timem1"
+factor = [1, 1000000]
+aliases = ["potential_vorticity_unit"]
+display = { long = "potential_vorticity_unit" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-6 m^2 s^-1 K kg^-1" }
+
+[unit.Pa]
+dimension = "pressure"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["pascal"]
+display = { long = "pascal" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: N/m^2" }
+
+[unit.R]
+dimension = "d_current1_massm1_time1"
+factor = [129, 500000]
+aliases = ["roentgen"]
+display = { long = "roentgen" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 2.58e-4 C/kg" }
+
+[unit.S]
+dimension = "admittance"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["siemens"]
+display = { long = "siemens" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: A/V" }
+
+[unit.St]
+dimension = "d_length2_timem1"
+factor = [1, 10000]
+aliases = ["stokes"]
+display = { long = "stokes" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-4 m^2/s" }
+
+[unit.Sv]
+dimension = "d_length2_timem2"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["sievert"]
+display = { long = "sievert" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: J/kg" }
+
+[unit.T]
+dimension = "d_currentm1_mass1_timem2"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["tesla"]
+display = { long = "tesla" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: Wb/m^2" }
+
+[unit.TNT]
+dimension = "d_length2_timem2"
+factor = [4184000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.184 MJ/kg" }
+
+[unit.Tbl]
+dimension = "volume"
+factor = [946353, 64000000000]
+aliases = ["Tblsp", "Tbsp", "tablespoon", "tblsp", "tbsp"]
+display = { long = "tablespoon" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_fluid_ounce/2" }
+
+[unit.UK_fluid_ounce]
+dimension = "volume"
+factor = [454609, 16000000000]
+aliases = ["UK_liquid_ounce"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: UK_liquid_gallon/160" }
+
+[unit.UK_horsepower]
+dimension = "power"
+factor = [7457, 10]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.4570e2 W" }
+
+[unit.UK_liquid_cup]
+dimension = "volume"
+factor = [454609, 1600000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: UK_liquid_gallon/16" }
+
+[unit.UK_liquid_gallon]
+dimension = "volume"
+factor = [454609, 100000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.546090e-3 m^3" }
+
+[unit.UK_liquid_gill]
+dimension = "volume"
+factor = [454609, 3200000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: UK_liquid_gallon/32" }
+
+[unit.UK_liquid_pint]
+dimension = "volume"
+factor = [454609, 800000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: UK_liquid_gallon/8" }
+
+[unit.UK_liquid_quart]
+dimension = "volume"
+factor = [454609, 400000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: UK_liquid_gallon/4" }
+
+[unit.US_dry_gallon]
+dimension = "volume"
+factor = [1101221, 250000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.404884e-3 m^3" }
+
+[unit.US_dry_pint]
+dimension = "volume"
+factor = [1101221, 2000000000]
+aliases = ["dry_pint"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_dry_gallon/8" }
+
+[unit.US_dry_quart]
+dimension = "volume"
+factor = [1101221, 1000000000]
+aliases = ["dry_quart"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_dry_gallon/4" }
+
+[unit.US_liquid_cup]
+dimension = "volume"
+factor = [946353, 4000000000]
+aliases = ["cup", "liquid_cup"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_liquid_gallon/16" }
+
+[unit.US_liquid_gallon]
+dimension = "volume"
+factor = [946353, 250000000]
+aliases = ["gallon", "liquid_gallon"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.785412e-3 m^3" }
+
+[unit.US_liquid_gill]
+dimension = "volume"
+factor = [946353, 8000000000]
+aliases = ["gill", "liquid_gill"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_liquid_gallon/32" }
+
+[unit.US_liquid_quart]
+dimension = "volume"
+factor = [946353, 1000000000]
+aliases = ["liquid_quart", "quart"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_liquid_gallon/4" }
+
+[unit.US_survey_foot]
+dimension = "length"
+factor = [1200, 3937]
+aliases = ["US_survey_feet"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: (1200/3937) m" }
+
+[unit.US_survey_mile]
+dimension = "length"
+factor = [6336000, 3937]
+aliases = ["US_statute_mile"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5280 US_survey_feet" }
+
+[unit.US_survey_yard]
+dimension = "length"
+factor = [3600, 3937]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3 US_survey_feet" }
+
+[unit.V]
+dimension = "voltage"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["volt"]
+display = { long = "volt" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: W/A" }
+
+[unit.VA]
+dimension = "power"
+factor = [1, 1]
+aliases = ["voltampere"]
+display = { long = "voltampere" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: V.A" }
+
+[unit.W]
+dimension = "power"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["watt"]
+display = { long = "watt" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: J/s" }
+
+[unit.Wb]
+dimension = "d_currentm1_length2_mass1_timem2"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["weber"]
+display = { long = "weber" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: V.s" }
+
+[unit.a]
+dimension = "area"
+factor = [100, 1]
+aliases = ["are"]
+display = { long = "are" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: dam^2" }
+
+[unit.abampere]
+dimension = "current"
+factor = [10, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 10 A" }
+
+[unit.abfarad]
+dimension = "capacitance"
+factor = [1000000000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e9 F" }
+
+[unit.abhenry]
+dimension = "inductance"
+factor = [1, 1000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-9 H" }
+
+[unit.abmho]
+dimension = "admittance"
+factor = [1000000000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e9 S" }
+
+[unit.abohm]
+dimension = "impedance"
+factor = [1, 1000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-9 ohm" }
+
+[unit.abvolt]
+dimension = "voltage"
+factor = [1, 100000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-8 V" }
+
+[unit.acre]
+dimension = "area"
+factor = [62726400000, 15499969]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 160 rod^2" }
+
+[unit.acre_foot]
+dimension = "volume"
+factor = [1233489, 1000]
+aliases = ["acre_feet"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.233489e3 m^3" }
+
+[unit.amp]
+dimension = "current"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: A" }
+
+[unit.angstrom]
+dimension = "length"
+factor = [1, 10000000000]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1e-10 m" }
+
+[unit.apdram]
+dimension = "mass"
+factor = [19439673, 5000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 60 grain" }
+
+[unit.apounce]
+dimension = "mass"
+factor = [19439673, 625000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 480 grain" }
+
+[unit.appound]
+dimension = "mass"
+factor = [58319019, 156250000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5760 grain" }
+
+[unit.arc_degree]
+dimension = "angle"
+factor = [1, 180]
+pi = 1
+aliases = ["angular_degree", "arcdeg", "degree"]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: (pi/180) rad" }
+
+[unit.arc_minute]
+dimension = "angle"
+factor = [1, 10800]
+pi = 1
+aliases = ["angular_minute", "arcmin", "arcminute"]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: °/60" }
+
+[unit.arpentlin]
+dimension = "length"
+factor = [14617827, 250000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 191.835 foot" }
+
+[unit.assay_ton]
+dimension = "mass"
+factor = [2916667, 100000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.916667e-2 kg" }
+
+[unit.at]
+dimension = "pressure"
+factor = [196133, 200]
+aliases = ["technical_atmosphere"]
+display = { long = "technical_atmosphere" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1 kg gravity/cm2" }
+
+[unit.atm]
+dimension = "pressure"
+factor = [101325, 1]
+aliases = ["atmosphere", "standard_atmosphere"]
+display = { long = "standard_atmosphere" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.01325e5 Pa" }
+
+[unit.au]
+dimension = "length"
+factor = [149597870700, 1]
+aliases = ["astronomical_unit"]
+display = { long = "astronomical_unit" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1.49597870700e11 m" }
+
+[unit.avogadro_constant]
+dimension = "d_amountm1"
+factor = [602214179000000000000000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 6.02214179e23/mol" }
+
+[unit.avoirdupois_ounce]
+dimension = "mass"
+factor = [354369, 12500000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.834952e-2 kg" }
+
+[unit.b]
+dimension = "area"
+factor = [1, 10000000000000000000000000000]
+aliases = ["barn"]
+display = { long = "barn" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 100 fm^2" }
+
+[unit.bag]
+dimension = "mass"
+factor = [2131884139, 50000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 94 pound" }
+
+[unit.bar]
+dimension = "pressure"
+factor = [100000, 1]
+prefixes = "si"
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1000 hPa" }
+
+[unit.barie]
+dimension = "pressure"
+factor = [1, 10]
+aliases = ["barye"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 0.1 N/m^2" }
+
+[unit.barleycorn]
+dimension = "length"
+factor = [127, 15000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch/3" }
+
+[unit.bbl]
+dimension = "volume"
+factor = [19873413, 125000000]
+aliases = ["barrel"]
+display = { long = "barrel" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 42 US_liquid_gallon" }
+
+[unit.bev]
+dimension = "energy"
+factor = [160217733, 1000000000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e9 eV" }
+
+[unit.big_point]
+dimension = "length"
+factor = [127, 360000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch/72" }
+
+[unit.biot]
+dimension = "current"
+factor = [10, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 10 A" }
+
+[unit.bit]
+dimension = "dimensionless"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1" }
+
+[unit.blondel]
+dimension = "d_lengthm2_luminosity1"
+factor = [1, 1]
+pi = -1
+aliases = ["apostilb"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: cd/(pi m^2)" }
+
+[unit.board_foot]
+dimension = "volume"
+factor = [2359737, 1000000000]
+aliases = ["board_feet"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.359737e-3 m^3" }
+
+[unit.boiler_horsepower]
+dimension = "power"
+factor = [19619, 2]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.80950e3 W" }
+
+[unit.bu]
+dimension = "volume"
+factor = [3523907, 100000000]
+aliases = ["bushel"]
+display = { long = "bushel" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.523907e-2 m^3" }
+
+[unit.cal]
+dimension = "energy"
+factor = [10467, 2500]
+aliases = ["IT_calorie", "calorie"]
+display = { long = "IT_calorie" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.1868 J" }
+
+[unit.candle]
+dimension = "luminosity"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: cd" }
+
+[unit.carat]
+dimension = "mass"
+factor = [1, 5000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2e-4 kg" }
+
+[unit.cc]
+dimension = "volume"
+factor = [1, 1000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: cm^3" }
+
+[unit.cd]
+dimension = "luminosity"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["candela"]
+display = { long = "candela" }
+provenance = { system = "udunits", source = "udunits2-base.xml@81307f4fd0f8" }
+
+[unit.chain]
+dimension = "length"
+factor = [502921, 25000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.011684e1 m" }
+
+[unit.chemical_faraday]
+dimension = "charge"
+factor = [964957, 10]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.64957e4 C" }
+
+[unit.circle]
+dimension = "angle"
+factor = [2, 1]
+pi = 1
+aliases = ["cycle", "revolution", "rotation", "turn"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2 pi rad" }
+
+[unit.circular_mil]
+dimension = "area"
+factor = [202683, 400000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5.067075e-10 m^2" }
+
+[unit.clo]
+dimension = "d_massm1_temperature1_time3"
+factor = [31, 200]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.55e-1 K.m^2/W" }
+
+[unit.cm_H2O]
+dimension = "pressure"
+factor = [196133, 2000]
+aliases = ["cmH2O"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: cm H2O" }
+
+[unit.cm_Hg]
+dimension = "pressure"
+factor = [26664477483, 20000000]
+aliases = ["cmHg"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: cm Hg" }
+
+[unit.common_year]
+dimension = "time"
+factor = [31536000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 365 day" }
+
+[unit.count]
+dimension = "dimensionless"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1" }
+
+[unit.d]
+dimension = "time"
+factor = [86400, 1]
+aliases = ["day"]
+display = { long = "day" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 24 h" }
+
+[unit.darcy]
+dimension = "area"
+factor = [9869233, 10000000000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.869233e-13 m^2" }
+
+[unit.degree_Celsius]
+dimension = "temperature"
+factor = [1, 1]
+offset = [5463, 20]
+aliases = ["degrees_Celsius"]
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: K @ 273.15" }
+
+[unit.degree_kelvin]
+dimension = "temperature"
+factor = [1, 1]
+aliases = ["degK", "deg_K", "degreeK", "degree_K", "degreesK", "degrees_K", "degrees_kelvin", "degsK", "degs_K"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: K" }
+
+[unit.degree_north]
+dimension = "angle"
+factor = [1, 180]
+pi = 1
+aliases = ["degreeE", "degreeN", "degreeT", "degree_E", "degree_N", "degree_T", "degree_east", "degree_true", "degreesE", "degreesN", "degreesT", "degrees_E", "degrees_N", "degrees_T", "degrees_east", "degrees_north", "degrees_true"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: arc_degree" }
+
+[unit.degree_rankine]
+dimension = "temperature"
+factor = [5, 9]
+aliases = ["degR", "deg_R", "degreeR", "degree_R", "degreesR", "degrees_R", "degrees_rankine", "degsR", "degs_R"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: K/1.8" }
+
+[unit.denier]
+dimension = "d_lengthm1_mass1"
+factor = [1111111, 10000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.111111e-7 kg/m" }
+
+[unit.dr]
+dimension = "mass"
+factor = [354369, 200000000]
+aliases = ["dram"]
+display = { long = "dram" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: avoirdupois_ounce/16" }
+
+[unit.dyne]
+dimension = "force"
+factor = [1, 100000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-5 N" }
+
+[unit.e]
+dimension = "charge"
+factor = [1602176487, 10000000000000000000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.602176487e-19 C" }
+
+[unit.eV]
+dimension = "energy"
+factor = [160217733, 1000000000000000000000000000]
+aliases = ["electron_volt", "electronvolt"]
+display = { long = "electronvolt" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1.60217733e-19 J" }
+
+[unit.einstein]
+dimension = "amount"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: mole" }
+
+[unit.electric_horsepower]
+dimension = "power"
+factor = [746, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.460000e2 W" }
+
+[unit.eon]
+dimension = "time"
+factor = [31556925974700000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e9 year" }
+
+[unit.erg]
+dimension = "energy"
+factor = [1, 10000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-7 J" }
+
+[unit.fahrenheit]
+dimension = "temperature"
+factor = [5, 9]
+offset = [45967, 180]
+aliases = ["degF", "deg_F", "degreeF", "degree_F", "degree_fahrenheit", "degreesF", "degrees_F", "degrees_fahrenheit", "degsF", "degs_F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: °R @ 459.67" }
+
+[unit.fathom]
+dimension = "length"
+factor = [7200, 3937]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 6 US_survey_feet" }
+
+[unit.fermi]
+dimension = "length"
+factor = [1, 1000000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-15 m" }
+
+[unit.firkin]
+dimension = "volume"
+factor = [19873413, 500000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: barrel/4" }
+
+[unit.fldr]
+dimension = "volume"
+factor = [946353, 256000000000]
+aliases = ["fluid_dram"]
+display = { long = "fluid_dram" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_fluid_ounce/8" }
+
+[unit.footcandle]
+dimension = "d_angle2_lengthm2_luminosity1"
+factor = [1076391, 100000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.076391e1 lx" }
+
+[unit.footlambert]
+dimension = "d_lengthm2_luminosity1"
+factor = [3426259, 1000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.426259 cd/m^2" }
+
+[unit.force]
+dimension = "acceleration"
+factor = [196133, 20000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: standard_free_fall" }
+
+[unit.force_ton]
+dimension = "force"
+factor = [8896443230521, 1000000000]
+aliases = ["ton_force", "tons_force"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2000 force_pound" }
+
+[unit.fortnight]
+dimension = "time"
+factor = [1209600, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 14 day" }
+
+[unit.ft]
+dimension = "length"
+factor = [381, 1250]
+aliases = ["feet", "foot", "international_feet", "international_foot"]
+display = { long = "international_foot" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 12 international_inches" }
+
+[unit.ftH2O]
+dimension = "pressure"
+factor = [74726673, 25000]
+aliases = ["feetH2O", "feet_H2O", "feet_water", "footH2O", "foot_H2O", "foot_water", "fth2o"]
+display = { long = "foot_water" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: foot water" }
+
+[unit.furlong]
+dimension = "length"
+factor = [792000, 3937]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 660 US_survey_feet" }
+
+[unit.g]
+dimension = "mass"
+factor = [1, 1000]
+prefixes = "si"
+aliases = ["gram"]
+display = { long = "gram" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: 1e-3 kg" }
+
+[unit.gal]
+dimension = "acceleration"
+factor = [1, 100]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: cm/s^2" }
+
+[unit.gamma]
+dimension = "d_currentm1_mass1_timem2"
+factor = [1, 1000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-9 T" }
+
+[unit.gauss]
+dimension = "d_currentm1_mass1_timem2"
+factor = [1, 10000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-4 T" }
+
+[unit.gf]
+dimension = "force"
+factor = [196133, 20000000]
+aliases = ["force_gram", "gram_force", "grams_force"]
+display = { long = "gram_force" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gram force" }
+
+[unit.gilbert]
+dimension = "current"
+factor = [7957747, 10000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.957747e-1 A" }
+
+[unit.gp]
+dimension = "acceleration"
+factor = [196133, 20000]
+aliases = ["dynamic", "geopotential"]
+display = { long = "geopotential" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gravity" }
+
+[unit.gr]
+dimension = "mass"
+factor = [6479891, 100000000000]
+aliases = ["grain"]
+display = { long = "grain" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 6.479891e-5 kg" }
+
+[unit.grade]
+dimension = "angle"
+factor = [1, 200]
+pi = 1
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 0.9 arc_degree" }
+
+[unit.gravity]
+dimension = "acceleration"
+factor = [196133, 20000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: standard_free_fall" }
+
+[unit.h]
+dimension = "time"
+factor = [3600, 1]
+aliases = ["hour", "hr"]
+display = { long = "hour" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 60 min" }
+
+[unit.hectare]
+dimension = "area"
+factor = [10000, 1]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 100 are" }
+
+[unit.hp]
+dimension = "power"
+factor = [7456999, 10000]
+aliases = ["horsepower", "shaft_horsepower"]
+display = { long = "shaft_horsepower" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.456999e2 W" }
+
+[unit.in]
+dimension = "length"
+factor = [127, 5000]
+aliases = ["inch", "international_inch"]
+display = { long = "international_inch" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.54 cm" }
+
+[unit.in_Hg]
+dimension = "pressure"
+factor = [3386388640341, 1000000000]
+aliases = ["inHg", "inch_Hg", "inches_Hg"]
+display = { long = "inch_Hg" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch Hg" }
+
+[unit.inch_H2O_39F]
+dimension = "pressure"
+factor = [6227048387763, 25000000000]
+aliases = ["inches_H2O_39F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch water_39F" }
+
+[unit.inch_H2O_60F]
+dimension = "pressure"
+factor = [24884007017891, 100000000000]
+aliases = ["inches_H2O_60F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch water_60F" }
+
+[unit.inch_Hg_32F]
+dimension = "pressure"
+factor = [3386388640341, 1000000000]
+aliases = ["inches_Hg_32F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch mercury_32F" }
+
+[unit.inch_Hg_60F]
+dimension = "pressure"
+factor = [211053033443, 62500000]
+aliases = ["inches_Hg_60F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: inch mercury_60F" }
+
+[unit.international_knot]
+dimension = "velocity"
+factor = [463, 900]
+aliases = ["knot", "knot_international"]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: nautical_mile/hour" }
+
+[unit.jiffy]
+dimension = "time"
+factor = [1, 100]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 0.01 s" }
+
+[unit.kat]
+dimension = "d_amount1_timem1"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["katal"]
+display = { long = "katal" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: mol/s" }
+
+[unit.kayser]
+dimension = "d_lengthm1"
+factor = [100, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 100/m" }
+
+[unit.kgf]
+dimension = "force"
+factor = [196133, 20000]
+aliases = ["force_kilogram", "kilogram_force", "kilograms_force"]
+display = { long = "force_kilogram" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.806650 N" }
+
+[unit.kip]
+dimension = "force"
+factor = [8896443230521, 2000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1000 lbf" }
+
+[unit.ksi]
+dimension = "pressure"
+factor = [8896443230521, 1290320]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: kip/in^2" }
+
+[unit.kt]
+dimension = "velocity"
+factor = [463, 900]
+aliases = ["kts"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: knot" }
+
+[unit.lambert]
+dimension = "d_lengthm2_luminosity1"
+factor = [10000, 1]
+pi = -1
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: (1e4/pi) cd/m^2" }
+
+[unit.langley]
+dimension = "d_mass1_timem2"
+factor = [41840, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.184000e4 J/m^2" }
+
+[unit.lb]
+dimension = "mass"
+factor = [45359237, 100000000]
+aliases = ["avoirdupois_pound", "pound"]
+display = { long = "avoirdupois_pound" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.5359237e-1 kg" }
+
+[unit.lbf]
+dimension = "force"
+factor = [8896443230521, 2000000000000]
+aliases = ["force_pound", "pound_force", "pounds_force"]
+display = { long = "force_pound" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.4482216152605 N" }
+
+[unit.leap_year]
+dimension = "time"
+factor = [31622400, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 366 day" }
+
+[unit.light_year]
+dimension = "length"
+factor = [9460730000000000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.46073e15 m" }
+
+[unit.lm]
+dimension = "d_angle2_luminosity1"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["lumen"]
+display = { long = "lumen" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: cd.sr" }
+
+[unit.long_hundredweight]
+dimension = "mass"
+factor = [1016047, 20000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5.080235e1 kg" }
+
+[unit.long_ton]
+dimension = "mass"
+factor = [317514659, 312500]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2240 pound" }
+
+[unit.lunar_month]
+dimension = "time"
+factor = [1594651806, 625]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 29.530589 day" }
+
+[unit.lx]
+dimension = "d_angle2_lengthm2_luminosity1"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["lux"]
+display = { long = "lux" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: lm/m^2" }
+
+[unit.m]
+dimension = "length"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["meter", "metre"]
+display = { long = "meter" }
+provenance = { system = "udunits", source = "udunits2-base.xml@81307f4fd0f8" }
+
+[unit.maxwell]
+dimension = "d_currentm1_length2_mass1_timem2"
+factor = [1, 100000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-8 Wb" }
+
+[unit.mercury_60F]
+dimension = "d_lengthm2_mass1_timem2"
+factor = [1661834909, 12500]
+aliases = ["mercuries_60F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gravity 13556.8 kg/m^3" }
+
+[unit.metric_horsepower]
+dimension = "power"
+factor = [735499, 1000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.35499e2 W" }
+
+[unit.mi]
+dimension = "length"
+factor = [201168, 125]
+aliases = ["international_mile", "mile"]
+display = { long = "international_mile" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5280 international_feet" }
+
+[unit.micron]
+dimension = "length"
+factor = [1, 1000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-6 m" }
+
+[unit.mil]
+dimension = "length"
+factor = [127, 5000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.54e-5 m" }
+
+[unit.millimeter_Hg_0C]
+dimension = "pressure"
+factor = [26664477483, 200000000]
+aliases = ["millimeters_Hg_0C"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: mm mercury_0C" }
+
+[unit.min]
+dimension = "time"
+factor = [60, 1]
+aliases = ["minute"]
+display = { long = "minute" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 60 s" }
+
+[unit.mm_Hg]
+dimension = "pressure"
+factor = [26664477483, 200000000]
+aliases = ["millimeter_Hg", "millimeters_Hg", "mmHg", "mm_hg", "mmhg", "torr"]
+display = { long = "millimeter_Hg" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: mm Hg" }
+
+[unit.mol]
+dimension = "amount"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["mole"]
+display = { long = "mole" }
+provenance = { system = "udunits", source = "udunits2-base.xml@81307f4fd0f8" }
+
+[unit.molecule]
+dimension = "amount"
+factor = [1, 602214179000000000000000]
+aliases = ["molec", "nuc", "nucleon"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1/avogadro_constant" }
+
+[unit.month]
+dimension = "time"
+factor = [105189753249, 40000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: year/12" }
+
+[unit.nautical_mile]
+dimension = "length"
+factor = [1852, 1]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1852 m" }
+
+[unit.nmile]
+dimension = "length"
+factor = [1852, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: nautical_mile" }
+
+[unit.nt]
+dimension = "d_lengthm2_luminosity1"
+factor = [1, 1]
+aliases = ["nit"]
+display = { long = "nit" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1 cd/m^2" }
+
+[unit.octet]
+dimension = "dimensionless"
+factor = [8, 1]
+aliases = ["byte"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 8" }
+
+[unit.ohm]
+dimension = "impedance"
+factor = [1, 1]
+prefixes = "si"
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: V/A" }
+
+[unit.oz]
+dimension = "volume"
+factor = [946353, 32000000000]
+aliases = ["US_fluid_ounce", "US_liquid_ounce", "floz", "fluid_ounce", "liquid_ounce"]
+display = { long = "US_fluid_ounce" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_liquid_gallon/128" }
+
+[unit.ozf]
+dimension = "force"
+factor = [2780139, 10000000]
+aliases = ["force_ounce", "ounce_force", "ounces_force"]
+display = { long = "force_ounce" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.780139e-1 N" }
+
+[unit.parsec]
+dimension = "length"
+factor = [30856780000000000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.085678e16 m" }
+
+[unit.pennyweight]
+dimension = "mass"
+factor = [777587, 500000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.555174e-3 kg" }
+
+[unit.percent]
+dimension = "dimensionless"
+factor = [1, 100]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 0.01" }
+
+[unit.perm_0C]
+dimension = "d_lengthm1_time1"
+factor = [114427, 2000000000000000]
+aliases = ["perms_0C"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5.72135e-11 kg/(Pa.s.m^2)" }
+
+[unit.perm_23C]
+dimension = "d_lengthm1_time1"
+factor = [22981, 400000000000000]
+aliases = ["perms_23C"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5.74525e-11 kg/(Pa.s.m^2)" }
+
+[unit.ph]
+dimension = "d_angle2_lengthm2_luminosity1"
+factor = [10000, 1]
+aliases = ["phot"]
+display = { long = "phot" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e4 lm/m^2" }
+
+[unit.physical_faraday]
+dimension = "charge"
+factor = [965219, 10]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.65219e4 C" }
+
+[unit.pi]
+dimension = "dimensionless"
+factor = [3141592653589793238462643383279, 1000000000000000000000000000000]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 3.141592653589793238462643383279" }
+
+[unit.pk]
+dimension = "volume"
+factor = [3523907, 400000000]
+aliases = ["peck"]
+display = { long = "peck" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: bushel/4" }
+
+[unit.poise]
+dimension = "d_lengthm1_mass1_timem1"
+factor = [1, 10]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-1 Pa.s" }
+
+[unit.pond]
+dimension = "force"
+factor = [196133, 20000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.806650e-3 N" }
+
+[unit.poundal]
+dimension = "force"
+factor = [27651, 200000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.382550e-1 N" }
+
+[unit.ppb]
+dimension = "dimensionless"
+factor = [1, 1000000000]
+aliases = ["ppbv"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-9" }
+
+[unit.ppm]
+dimension = "dimensionless"
+factor = [1, 1000000]
+aliases = ["ppmv"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-6" }
+
+[unit.ppq]
+dimension = "dimensionless"
+factor = [1, 1000000000000000]
+aliases = ["ppqv"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-15" }
+
+[unit.ppt]
+dimension = "dimensionless"
+factor = [1, 1000000000000]
+aliases = ["pptv"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-12" }
+
+[unit.ppv]
+dimension = "dimensionless"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1" }
+
+[unit.printers_pica]
+dimension = "length"
+factor = [5271897, 1250000000]
+aliases = ["pica"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 12 printers_point" }
+
+[unit.printers_point]
+dimension = "length"
+factor = [1757299, 5000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.514598e-4 m" }
+
+[unit.psi]
+dimension = "pressure"
+factor = [8896443230521, 1290320000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1 pound gravity/in^2" }
+
+[unit.pt]
+dimension = "volume"
+factor = [946353, 2000000000]
+aliases = ["US_liquid_pint", "liquid_pint", "pint"]
+display = { long = "US_liquid_pint" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: US_liquid_gallon/8" }
+
+[unit.rad]
+dimension = "angle"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["radian"]
+display = { long = "radian" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8" }
+
+[unit.refrigeration_ton]
+dimension = "power"
+factor = [52752792631, 15000000]
+aliases = ["ton_of_refrigeration", "tons_of_refrigeration"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 12000 Btu/hr" }
+
+[unit.register_ton]
+dimension = "volume"
+factor = [566337, 200000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.831685 m^3" }
+
+[unit.rem]
+dimension = "d_length2_timem2"
+factor = [1, 100]
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: cSv" }
+
+[unit.rhe]
+dimension = "d_length1_massm1_time1"
+factor = [10, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 10/(Pa.s)" }
+
+[unit.rod]
+dimension = "length"
+factor = [19800, 3937]
+aliases = ["perch", "pole"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 16.5 US_survey_feet" }
+
+[unit.rpm]
+dimension = "angular_frequency"
+factor = [1, 30]
+pi = 1
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: rotation/minute" }
+
+[unit.rps]
+dimension = "angular_frequency"
+factor = [2, 1]
+pi = 1
+aliases = ["cps", "rotation_per_second", "rotations_per_second"]
+display = { long = "rotation_per_second" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: rotation/second" }
+
+[unit.s]
+dimension = "time"
+factor = [1, 1]
+prefixes = "si"
+aliases = ["second"]
+display = { long = "second" }
+provenance = { system = "udunits", source = "udunits2-base.xml@81307f4fd0f8" }
+
+[unit.sb]
+dimension = "d_lengthm2_luminosity1"
+factor = [10000, 1]
+aliases = ["stilb"]
+display = { long = "stilb" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e4 cd/m^2" }
+
+[unit.scruple]
+dimension = "mass"
+factor = [6479891, 5000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 20 grain" }
+
+[unit.sec]
+dimension = "time"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: s" }
+
+[unit.shake]
+dimension = "time"
+factor = [1, 100000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-8 s" }
+
+[unit.short_hundredweight]
+dimension = "mass"
+factor = [1133981, 25000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.535924e1 kg" }
+
+[unit.short_ton]
+dimension = "mass"
+factor = [45359237, 50000]
+aliases = ["ton"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2000 pound" }
+
+[unit.sidereal_day]
+dimension = "time"
+factor = [8616409, 100]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 8.616409e4 s" }
+
+[unit.sidereal_hour]
+dimension = "time"
+factor = [359017, 100]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.590170e3 s" }
+
+[unit.sidereal_minute]
+dimension = "time"
+factor = [5983617, 100000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 5.983617e1 s" }
+
+[unit.sidereal_month]
+dimension = "time"
+factor = [1475369694, 625]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 27.321661 day" }
+
+[unit.sidereal_second]
+dimension = "time"
+factor = [1246587, 1250000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 0.9972696 s" }
+
+[unit.sidereal_year]
+dimension = "time"
+factor = [31558150, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.155815e7 s" }
+
+[unit.slug]
+dimension = "mass"
+factor = [145939, 10000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 14.59390 kg" }
+
+[unit.sr]
+dimension = "d_angle2"
+factor = [1, 1]
+aliases = ["steradian"]
+display = { long = "steradian" }
+provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: rad^2" }
+
+[unit.standard_free_fall]
+dimension = "acceleration"
+factor = [196133, 20000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 9.806650 m/s^2" }
+
+[unit.statampere]
+dimension = "current"
+factor = [83391, 250000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.335640e-10 A" }
+
+[unit.statcoulomb]
+dimension = "charge"
+factor = [83391, 250000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.335640e-10 C" }
+
+[unit.statfarad]
+dimension = "capacitance"
+factor = [22253, 20000000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.112650e-12 F" }
+
+[unit.stathenry]
+dimension = "inductance"
+factor = [898755400000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 8.987554e11 H" }
+
+[unit.statmho]
+dimension = "admittance"
+factor = [22253, 20000000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.112650e-12 S" }
+
+[unit.statohm]
+dimension = "impedance"
+factor = [898755400000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 8.987554e11 ohm" }
+
+[unit.statvolt]
+dimension = "voltage"
+factor = [119917, 400]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2.997925e2 V" }
+
+[unit.stere]
+dimension = "volume"
+factor = [1, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1 m^3" }
+
+[unit.sverdrup]
+dimension = "d_length3_timem1"
+factor = [1000000, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e6 m^3/s" }
+
+[unit.t]
+dimension = "mass"
+factor = [1000, 1]
+aliases = ["metric_ton", "tonne"]
+display = { long = "metric_ton" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1000 kg" }
+
+[unit.tex]
+dimension = "d_lengthm1_mass1"
+factor = [1, 1000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1e-6 kg/m" }
+
+[unit.thermochemical_calorie]
+dimension = "energy"
+factor = [523, 125]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.184000 J" }
+
+[unit.thm]
+dimension = "energy"
+factor = [105480400, 1]
+aliases = ["US_therm", "therm"]
+display = { long = "US_therm" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.054804e8 J" }
+
+[unit.ton_TNT]
+dimension = "energy"
+factor = [4184000000, 1]
+aliases = ["tons_TNT"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 4.184e9 J" }
+
+[unit.tropical_month]
+dimension = "time"
+factor = [1475365428, 625]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 27.321582 day" }
+
+[unit.troy_ounce]
+dimension = "mass"
+factor = [777587, 25000000]
+aliases = ["apothecary_ounce"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.110348e-2 kg" }
+
+[unit.troy_pound]
+dimension = "mass"
+factor = [3732417, 10000000]
+aliases = ["apothecary_pound"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.732417e-1 kg" }
+
+[unit.tsp]
+dimension = "volume"
+factor = [315451, 64000000000]
+aliases = ["teaspoon"]
+display = { long = "teaspoon" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: tablespoon/3" }
+
+[unit.u]
+dimension = "mass"
+factor = [8302701, 5000000000000000000000000000000000]
+aliases = ["amu", "atomic_mass_unit", "atomicmassunit", "unified_atomic_mass_unit"]
+display = { long = "unified_atomic_mass_unit" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1.6605402e-27 kg" }
+
+[unit.ua]
+dimension = "length"
+factor = [149597900000, 1]
+aliases = ["astronomical_unit_BIPM_2006"]
+display = { long = "astronomical_unit_BIPM_2006" }
+provenance = { system = "udunits", source = "udunits2-accepted.xml@81307f4fd0f8", note = "upstream def: 1.495979e11 m" }
+
+[unit.unit_pole]
+dimension = "d_currentm1_length2_mass1_timem2"
+factor = [1256637, 10000000000000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 1.256637e-7 Wb" }
+
+[unit.water_4C]
+dimension = "d_lengthm2_mass1_timem2"
+factor = [49031877069, 5000000]
+aliases = ["water_39F", "waters_39F", "waters_4C"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gravity 999.972 kg/m^3" }
+
+[unit.water_60F]
+dimension = "d_lengthm2_mass1_timem2"
+factor = [195937063133, 20000000]
+aliases = ["waters_60F"]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: gravity 999.001 kg/m^3" }
+
+[unit.water_horsepower]
+dimension = "power"
+factor = [746043, 1000]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7.46043e2 W" }
+
+[unit.watthour]
+dimension = "energy"
+factor = [3600, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: watt.hour" }
+
+[unit.week]
+dimension = "time"
+factor = [604800, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 7 day" }
+
+[unit.work_month]
+dimension = "time"
+factor = [616800, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: work_year/12" }
+
+[unit.work_year]
+dimension = "time"
+factor = [7401600, 1]
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 2056 hours" }
+
+[unit.yd]
+dimension = "length"
+factor = [1143, 1250]
+aliases = ["international_yard", "yard"]
+display = { long = "international_yard" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3 international_feet" }
+
+[unit.yr]
+dimension = "time"
+factor = [315569259747, 10000]
+aliases = ["tropical_year", "year"]
+display = { long = "tropical_year" }
+provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: 3.15569259747e7 s" }
+
+# ---------------------------------------------------------------------------
+# Not prefixable, though the unit kind normally would be: at least one
+# prefix pushes the exact factor outside the i128 rational range (AMB-053).
+# ---------------------------------------------------------------------------
+#   eV
+
+# ---------------------------------------------------------------------------
+# Excluded (12) — listed so an upstream change that drops something
+# is visible in the diff rather than silent.
+# ---------------------------------------------------------------------------
+#   B                        logarithmic; §7.2 models scale and offset only (AMB-067)
+#   BV                       logarithmic; §7.2 models scale and offset only (AMB-067)
+#   BW                       logarithmic; §7.2 models scale and offset only (AMB-067)
+#   BZ                       logarithmic; §7.2 models scale and offset only (AMB-067)
+#   B_SPL                    logarithmic; §7.2 models scale and offset only (AMB-067)
+#   Bm                       logarithmic; §7.2 models scale and offset only (AMB-067)
+#   Bv                       logarithmic; §7.2 models scale and offset only (AMB-067)
+#   BµV                      no ASCII symbol or name (§6.1)
+#   arc_second               cannot tokenize at "'/60"
+#   celsius                  'degree_Celsius' is affine and cannot appear in an expression
+#   degree_west              negative scale; a sign convention, not a unit (§7.2)
+#   kg                       derives from the prefixable `g`; authoring it too would collide

@@ -3449,9 +3449,45 @@ one later.
 model** — plus the angle units AMB-066 sets aside, which overlap the `°`/`'`/`"`
 rows above.
 
-Still open: whether the seeded set should be the full linear 267 or a curated
-core, given that §7.4 makes the registry PR-gated and AMB-048 already keeps it
-small by deriving prefixes (20 authored units resolve 500 symbols).
+**IMPLEMENTED 2026-08-07.** `vendor/udunits-2` is pinned as a submodule and
+`tools/import_udunits.py` generates `registries/udunits.toml` — **265 authored
+units resolving 961 symbols, zero contested spellings.** The generated file is
+committed and reviewed; the submodule is a codegen input, never a vendored
+output.
+
+Evaluating UDUNITS' definitions needed a small expression evaluator, because it
+defines units by expression (`W = J/s`) where UnitArrow states a dimension and a
+factor. The grammar is regular — `.` and space multiply, `/` divides, `^` raises,
+parentheses group — plus three things the file does not spell out: prefixes are
+applied at parse time (`bar = 1000 hPa` needs `hPa` decomposed), names are
+pluralized on the fly (`3 international_feet` against an entry named
+`international_foot`), and a trailing integer is an exponent (`cm2`). **257 of
+259 definitions evaluate**; the two that do not are the arc-second symbol and a
+non-ASCII alias of `degC`, both excluded anyway.
+
+**Four categories the load check forced into the open**, none anticipated:
+
+| | |
+|---|---|
+| `degree_west = -1 degree_east` | a negative scale is a **sign convention, not a unit** — it flips a sign rather than changing the size of anything. Excluded; the sign belongs to the datum |
+| `kg` authored *and* derived | the SI base unit of mass already carries a prefix, so `g` is authored at 1/1000 and `kg` derives at exactly 1 |
+| `eV` with `prefixes = "si"` | its factor already carries a denominator of 10²⁷, so pico- overflows i128 and the registry will not load |
+| a stale loop variable in the generator | gave every unit the *last* entry's aliases, caught as `alias "molec" is claimed by both "A" and "Bd"` |
+
+The `eV` case is the interesting one, and it argues AMB-053's open question.
+Prefixing is all-or-nothing per unit, so avoiding `peV` — which overflows —
+costs `keV` and `MeV`, which do not. A per-unit prefix **range**
+(`prefixes = { set = "si", from = -9, to = 30 }`) would keep both; §7.2 offers
+only named sets. Recorded rather than worked around: the generator detects the
+overflow, declines to declare prefixes for that unit, and lists it.
+
+Both departures from upstream are asserted by a test, so a regeneration cannot
+silently undo them: `rad` must carry dimension `angle`, `rad/s` must not be
+commensurable with `Hz`, and 180 arc-degrees must be π radians exactly.
+
+Still open: whether the seeded set should stay the full import or be curated
+down, and whether `udunits` or a curated subset becomes the `core` registry
+§7.4 refers to — that is a governance question, not a technical one.
 
 *Cases:* none yet. A `parsing` sub-theme keyed to the CF dialect should land
 with the reader, per the golden-files-with-the-feature rule.

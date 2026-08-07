@@ -463,3 +463,64 @@ fn the_power_systems_registry_loads_and_converts_correctly() {
     assert_eq!(conversion("kg", "g", &r).unwrap().apply(1.0), 1000.0);
     assert_eq!(conversion("t", "kg", &r).unwrap().apply(1.0), 1000.0);
 }
+
+/// The generated UDUNITS registry must load, and its factors must be right.
+///
+/// It is generated, so a regeneration after an upstream change could alter any
+/// factor silently. These assertions are the review of the generated artifact,
+/// expressed as a test — a wrong factor is a silently wrong deployment.
+#[test]
+fn the_udunits_registry_loads_and_converts_correctly() {
+    use unitarrow_core::{canonicalize, commensurable, conversion, Registry};
+
+    let src = std::fs::read_to_string(root().join("registries/udunits.toml")).unwrap();
+    let r = Registry::from_toml(&src).expect("the generated registry must load");
+
+    assert!(r.authored_count() > 200, "the import should be substantial");
+    assert!(
+        r.collision_risks().is_empty(),
+        "unresolved prefix collisions: {:?}",
+        r.collision_risks()
+            .iter()
+            .map(|c| &c.symbol)
+            .collect::<Vec<_>>()
+    );
+
+    for (from, to, expect) in [
+        ("Btu", "J", 1_055.055_852_62),
+        ("mi", "m", 1609.344),
+        ("bar", "Pa", 100_000.0),
+        ("lb", "kg", 0.453_592_37),
+        ("h", "s", 3600.0),
+        ("L", "m^3", 0.001),
+        // `kg` is not authored: it derives from the prefixable `g`, because the
+        // SI base unit of mass already carries a prefix.
+        ("kg", "g", 1000.0),
+        ("km", "m", 1000.0),
+        ("MW", "W", 1_000_000.0),
+    ] {
+        let c =
+            conversion(from, to, &r).unwrap_or_else(|e| panic!("{from} -> {to}: {}", e.message()));
+        assert!(
+            (c.apply(1.0) - expect).abs() < expect.abs() * 1e-12,
+            "1 {from} should be {expect} {to}, got {}",
+            c.apply(1.0)
+        );
+    }
+
+    // Affine units survive the import with their intercepts.
+    assert!((conversion("degF", "K", &r).unwrap().apply(0.0) - 255.372_222_222_222).abs() < 1e-9);
+    assert!((conversion("degree_Celsius", "K", &r).unwrap().apply(100.0) - 373.15).abs() < 1e-9);
+
+    // The two deliberate departures from upstream (AMB-066). UDUNITS makes the
+    // radian dimensionless; if a regeneration ever inherits that, `rad/s` and
+    // `Hz` become commensurable and a 2*pi error stops being detectable.
+    let u = |s: &str| canonicalize(s, &r, 1).unwrap();
+    assert_eq!(u("rad").dimension.sparse(), vec![("angle", 1)]);
+    assert!(!commensurable(&u("rad*s^-1"), &u("Hz")));
+
+    // And pi is carried as an exponent, not as the truncated decimal upstream
+    // stores: 180 degrees must be pi exactly.
+    let deg = conversion("arc_degree", "rad", &r).unwrap();
+    assert_eq!(deg.apply(180.0), std::f64::consts::PI);
+}
