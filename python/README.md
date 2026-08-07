@@ -131,3 +131,66 @@ roadmap will be published in this repository.
 *UnitArrow began in energy-systems research — where BTU, MWh, and
 per-unit quantities collide daily — but nothing in it is
 energy-specific.*
+
+## Testing
+
+```bash
+cd python && maturin develop && pytest tests -q
+```
+
+The suite is deliberately **not** a second copy of the Rust tests — the core's
+behaviour is covered by 156 of those. These cover what only exists at the
+boundary:
+
+- §10 error codes surviving into Python exception messages, since the codes are
+  the wire-stable vocabulary and a caller matching on them should still be able
+  to tell which condition fired
+- 128-bit factors crossing the FFI **exact**, not rounded through a float
+- the π exponent being visible, so a caller can tell when a factor has no exact
+  rational form rather than silently receiving an approximation
+- metadata placement: existing field metadata preserved, schema-level metadata
+  preserved, retagging replacing rather than duplicating
+- `units_of()` omitting untagged columns rather than reporting `None` — §5.3
+  makes "no unit" the absence of a claim, not a claim of dimensionlessness
+- validation firing before anything is written, so a bad unit cannot produce a
+  partially tagged table
+
+Each assertion about `tag()` was mutation-tested: the behaviour was broken
+deliberately and the test confirmed to fail.
+
+## Unit-aware expressions
+
+`Plan` computes schemas, never values. It decides whether an operation is legal,
+what unit the result carries, and what arithmetic the engine must perform — then
+hands the SQL to DuckDB (or anything else) and tags the result from the plan.
+
+```python
+plan   = unitarrow.Plan.from_table(tagged, reg)   # units read from the tags
+energy = plan["p_mw"] * plan["hours"]             # MW*h, computed
+out    = con.sql(f"SELECT {energy.sql} AS e FROM t").arrow().read_all()
+out    = unitarrow.tag(out, {"e": energy.unit}, reg)
+```
+
+**Tags do not have to survive the engine.** DuckDB, pandas and polars all
+discard Arrow field metadata, but the output unit is known *before* the query
+runs, so the result is retagged from the plan rather than recovered from the
+input. That turns a mitigation into a non-issue.
+
+What the emitted SQL gets right, and an ad-hoc `* 1000` would not:
+
+| | Emitted |
+|---|---|
+| scaling | `(p_mw * 1000)` |
+| affine — an intercept, not a factor | `(t_c + 5463.0 / 20)` |
+| irrational — π stays symbolic | `(theta_deg * pi() / 180)` |
+| exact rationals stay rational | `(q * 52752792631 / 50000000)` |
+| `+` across units emits the coercion | `(p_mw + (small / 1000))` |
+
+The last two are the interesting ones. Emitting the rational rather than a
+decimal is an **auditability** choice, not a precision one — measured over 20k
+values per factor, both forms sit within one ulp of exact rational arithmetic,
+but `* 52752792631 / 50000000` shows a reviewer the registry's definition where
+`* 1055.05585262` shows them a rounding. And emitting the coercion means the
+engine adds comparable numbers rather than raw ones.
+
+Adding across dimensions raises before any SQL exists.

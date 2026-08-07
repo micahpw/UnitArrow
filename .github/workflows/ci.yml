@@ -128,3 +128,40 @@ jobs:
             exit 1
           }
           echo "generator is deterministic across $(wc -l < /tmp/first) pages"
+
+  python:
+    name: Python bindings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install the test tooling
+        run: pip install pytest pyarrow pandas duckdb
+
+      # `pip install ./python` rather than `maturin develop`: develop requires
+      # an activated virtualenv, which a setup-python runner does not have.
+      # maturin is fetched automatically as the PEP 517 build backend.
+      #
+      # This needs a pip that builds in-tree — `[tool.maturin] manifest-path`
+      # points at ../crates, so a pip old enough to copy the source to a temp
+      # directory first cannot find the Rust crate. pip has built in-tree by
+      # default for several major versions; setup-python ships a recent one.
+      - name: Build and install the extension
+        run: pip install ./python
+
+      # The suite is deliberately not a second copy of the Rust tests. It covers
+      # what only exists at the boundary: §10 codes surviving into Python
+      # exceptions, 128-bit factors crossing the FFI exact rather than rounded,
+      # and the metadata placement `tag()` performs on a pyarrow schema.
+      - name: pytest
+        run: pytest python/tests -q

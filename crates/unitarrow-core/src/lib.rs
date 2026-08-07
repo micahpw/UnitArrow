@@ -73,7 +73,9 @@ pub mod compose;
 pub mod convert;
 pub mod dimension;
 pub mod error;
+pub mod expr;
 pub mod json_lite;
+pub mod metadata;
 pub mod parse;
 pub mod prefix;
 pub mod rational;
@@ -87,8 +89,10 @@ pub use compose::{compose, contested, Composed, Resolution, Source};
 pub use convert::{conversion, delta_of, Conversion};
 pub use dimension::{Dimension, BASE_DIMENSIONS};
 pub use error::{Error, ErrorCode, Result, WarningCode};
+pub use expr::{column, Dialect, Fragment};
+pub use metadata::{Base, Metadata, Temporal};
 pub use rational::{Rational, Scale};
-pub use registry::{CollisionRisk, QuantityKind, Registry, Unit};
+pub use registry::{Ambiguity, CollisionRisk, Provenance, QuantityKind, Registry, Unit};
 pub use sha256::digest_pin;
 
 /// The spec version this crate implements.

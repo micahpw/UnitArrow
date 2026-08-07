@@ -1,10 +1,22 @@
 [package]
 name = "unitarrow-py"
-description = "Python bindings for UnitArrow via pyo3-arrow (name reservation; spec in development)"
+description = "Python bindings for UnitArrow"
 readme = "../../README.md"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+# The extension module is a cdylib; `rlib` is kept so the crate can still be
+# unit-tested on the host without a Python interpreter.
+[lib]
+name = "_unitarrow"
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
+unitarrow-core = { path = "../unitarrow-core" }
+
+# abi3-py39: one wheel per platform rather than one per Python version (§4).
+[dependencies.pyo3]
+version = "0.29"
+features = ["abi3-py39", "extension-module"]

@@ -304,3 +304,105 @@ fn the_conformance_registry_loads_and_is_the_one_fixtures_name() {
         assert_eq!(version, r.version, "{} pins a different registry version", path.display());
     }
 }
+
+/// The shipping registries must load, and the factors a deployment depends on
+/// must be the ones intended.
+///
+/// A registry is data, so nothing else type-checks it: a wrong factor is a
+/// silently wrong deployment. These assertions are the review, expressed as a
+/// test.
+#[test]
+fn the_power_systems_registry_loads_and_converts_correctly() {
+    use unitarrow_core::{canonicalize, commensurable, conversion, Registry};
+
+    let src = std::fs::read_to_string(root().join("registries/power-systems.toml")).unwrap();
+    let r = Registry::from_toml(&src).expect("the power-systems registry must load");
+
+    // Prefixes are derived, not enumerated (AMB-048). Expressed as a ratio
+    // rather than a count: a bound on the authored set goes stale every time a
+    // unit is legitimately added, whereas the amplification is the actual
+    // invariant — it collapses toward 1 the moment someone starts listing
+    // prefixed forms by hand.
+    let amplification = r.unit_count() as f64 / r.authored_count() as f64;
+    assert!(
+        amplification > 4.0,
+        "prefixed forms look enumerated rather than derived: {} authored resolve \
+         only {} symbols ({amplification:.1}x)",
+        r.authored_count(),
+        r.unit_count()
+    );
+
+    // Making twelve bases prefixable claims a spelling per prefix. None may
+    // contest an authored symbol.
+    assert!(
+        r.collision_risks().is_empty(),
+        "unresolved prefix collisions: {:?}",
+        r.collision_risks().iter().map(|c| &c.symbol).collect::<Vec<_>>()
+    );
+
+    // The factors a power-systems deployment actually depends on.
+    for (from, to, expect) in [
+        ("MW", "kW", 1_000.0),
+        ("kV", "V", 1_000.0),
+        ("GWh", "MWh", 1_000.0),
+        ("MWh", "J", 3.6e9),
+        ("h", "s", 3_600.0),
+    ] {
+        let c = conversion(from, to, &r).unwrap();
+        assert_eq!(c.apply(1.0), expect, "1 {from} should be {expect} {to}");
+    }
+
+    // 180 degrees is pi radians exactly, not a 13-digit approximation of it.
+    let deg = conversion("deg", "rad", &r).unwrap();
+    assert_eq!(deg.apply(180.0), std::f64::consts::PI);
+
+    // Real, apparent and reactive power share a dimension deliberately: no
+    // quantity kinds are declared, so the checker does not separate them.
+    let u = |s: &str| canonicalize(s, &r, 1).unwrap();
+    assert!(commensurable(&u("MW"), &u("MVAr")));
+    assert!(commensurable(&u("MW"), &u("MVA")));
+
+    // Angular frequency must NOT be commensurable with frequency: omega = 2*pi*f,
+    // and a silent factor-of-1 coercion there is a 6.28x error (AMB-066).
+    assert!(!commensurable(&u("rad*s^-1"), &u("Hz")));
+    assert!(conversion("rad*s^-1", "Hz", &r).is_err());
+
+    // `MWh` and `MW*h` are the same quantity and different canonical forms
+    // (§1 goal 4). Worth an assertion so nobody "fixes" it later.
+    assert_eq!(
+        conversion("MWh", "J", &r).unwrap().apply(1.0),
+        conversion("MW*h", "J", &r).unwrap().apply(1.0)
+    );
+    assert_ne!(u("MWh").canonical, u("MW*h").canonical);
+
+    // The compound quantities this registry exists to express.
+    for q in [
+        "USD/MWh", "Btu/kWh", "t/MWh", "kg/MWh", "ohm/km", "MW/min", "MWh/yr",
+        "MVA", "MVAr", "MVAR", "Mvar", "kvar", "MMBtu", "uF", "mH", "mS",
+    ] {
+        assert!(canonicalize(q, &r, 1).is_ok(), "{q} should resolve");
+    }
+
+    // `MBtu` MUST NOT resolve. Under SI prefixes it is 10^6 Btu; the US gas
+    // industry reads M as the Roman thousand and means 10^3 — a 1000x gap with
+    // nothing in the string to say which. `Btu` is therefore not prefixable,
+    // and refusing the symbol is the correct answer to an ambiguous one.
+    assert!(
+        canonicalize("MBtu", &r, 1).is_err(),
+        "MBtu must not resolve — it is ambiguous by 1000x between SI and US gas convention"
+    );
+    assert_eq!(conversion("MMBtu", "Btu", &r).unwrap().apply(1.0), 1e6);
+
+    // Exactly one currency. A second at factor 1 would make USD -> EUR convert
+    // at y = x, inventing an exchange rate (§2 forbids rates as registry data).
+    let currencies = r
+        .units()
+        .filter(|un| un.dimension_name == "currency")
+        .count();
+    assert_eq!(currencies, 1, "more than one currency invents an exchange rate");
+
+    // Mass is authored as `g` because the SI base unit already carries a
+    // prefix; `kg` must derive to exactly 1.
+    assert_eq!(conversion("kg", "g", &r).unwrap().apply(1.0), 1000.0);
+    assert_eq!(conversion("t", "kg", &r).unwrap().apply(1.0), 1000.0);
+}

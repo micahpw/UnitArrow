@@ -1514,6 +1514,8 @@ fn page_ambiguity() -> String {
     )
     .unwrap();
 
+    s.push_str(&section_refused());
+
     // ---- 4. why not long names ------------------------------------------
     s.push_str(&section_reserved());
 
@@ -3114,5 +3116,81 @@ fn coverage_note(register: &str) -> String {
     if !bare.is_empty() {
         let _ = writeln!(s, "\n    Without an example: {}.", bare.join(", "));
     }
+    s
+}
+
+/// Spellings a registry refuses on purpose — rendered from the registry's own
+/// declarations, which are the same ones the error messages are built from.
+///
+/// That is the point of generating it: a user who hits `MBtu` is sent here by
+/// the error, and this page cannot disagree with the error, because neither is
+/// written by hand.
+fn section_refused() -> String {
+    let mut s = String::new();
+    writeln!(s, "## Spellings that are refused on purpose\n").unwrap();
+
+    let path = repo_root().join("registries/power-systems.toml");
+    let Ok(src) = std::fs::read_to_string(&path) else { return s };
+    let Ok(r) = Registry::from_toml(&src) else { return s };
+    let declared = r.ambiguities();
+    if declared.is_empty() {
+        return s;
+    }
+
+    writeln!(
+        s,
+        "Some strings are not missing units — they are strings two conventions \
+         read differently. Resolving one either way would be a guess, and a \
+         guess that is silently wrong by a factor of a thousand is the worst \
+         outcome available. So a registry may declare them refused, with the \
+         reason.\n\n\
+         From `{}`:\n",
+        path.file_name().unwrap().to_string_lossy()
+    )
+    .unwrap();
+
+    writeln!(s, "| Spelling | Why it is refused | Write instead |").unwrap();
+    writeln!(s, "|---|---|---|").unwrap();
+    for (sym, a) in &declared {
+        writeln!(
+            s,
+            "| `{sym}` | {} | {} |",
+            a.reason,
+            if a.use_instead.is_empty() {
+                "—".to_string()
+            } else {
+                a.use_instead.iter().map(|u| format!("`{u}`")).collect::<Vec<_>>().join(", ")
+            }
+        )
+        .unwrap();
+    }
+
+    writeln!(s, "\nWhat a user actually sees:\n").unwrap();
+    for (sym, _) in declared.iter().take(1) {
+        if let Err(e) = canonicalize(sym, &r, 1) {
+            writeln!(s, "```\n{}\n\n{}\n```\n", e.code_str(), e.message()).unwrap();
+        }
+    }
+    writeln!(
+        s,
+        "Contrast an ordinary typo, which still gets suggestions rather than a \
+         lecture:\n"
+    )
+    .unwrap();
+    if let Err(e) = canonicalize("MWH", &r, 1) {
+        writeln!(s, "```\n{}\n```\n", e.message()).unwrap();
+    }
+    writeln!(
+        s,
+        "!!! note \"Why a refusal is better than a default\"\n\
+         \x20   Picking one reading would make the other silently wrong for \
+         everyone who meant it. Refusing costs the user one lookup; guessing \
+         costs them a column that is off by 1000x and looks fine.\n\n\
+         \x20   The reason is **required** at declaration, for the same purpose \
+         it is required on `prefix_collisions` and on a composition ruling: the \
+         person who knows writes it down once, where the person who needs it \
+         will meet it.\n"
+    )
+    .unwrap();
     s
 }

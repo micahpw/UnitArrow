@@ -1,0 +1,14 @@
+# Python extension modules resolve their `Py*` symbols against the interpreter
+# that loads them, so the cdylib must link with those symbols left undefined.
+# On Linux that is the default; on macOS the linker rejects it without this.
+#
+# Scoped to the Apple targets, and only needed because `unitarrow-py` builds a
+# cdylib. Everything else in the workspace links normally.
+#
+# This is pyo3's documented approach for `cargo build`. `maturin` sets the same
+# flags itself, so wheel builds do not depend on this file.
+[target.aarch64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]
