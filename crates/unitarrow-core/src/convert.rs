@@ -128,7 +128,9 @@ pub fn between(a: &CanonicalUnit, b: &CanonicalUnit, registry: &Registry) -> Res
 /// `(factor, offset)` to the dimension's base unit.
 fn affine_parts(u: &CanonicalUnit, registry: &Registry) -> Result<(Scale, Rational)> {
     if let Some(sym) = &u.affine_symbol {
-        let unit = registry.resolve(sym).expect("resolved during canonicalization");
+        let unit = registry
+            .resolve(sym)
+            .expect("resolved during canonicalization");
         return Ok((unit.factor, unit.offset_or_zero()));
     }
     let scale = u
@@ -203,8 +205,14 @@ mod tests {
 
         // The exact-rational path is *exactly* right — 32 °F is 5463/20 K,
         // which is 273.15 with no residue. This is the claim §7.2 makes.
-        assert_eq!(c.apply_exact(Rational::integer(32)).unwrap(), Rational::new(5463, 20).unwrap());
-        assert_eq!(c.apply_exact(Rational::integer(212)).unwrap(), Rational::new(7463, 20).unwrap());
+        assert_eq!(
+            c.apply_exact(Rational::integer(32)).unwrap(),
+            Rational::new(5463, 20).unwrap()
+        );
+        assert_eq!(
+            c.apply_exact(Rational::integer(212)).unwrap(),
+            Rational::new(7463, 20).unwrap()
+        );
 
         // The f64 path carries the usual binary-floating-point residue, because
         // 5/9 is not representable. That is why the rational path exists and

@@ -118,7 +118,13 @@ impl fmt::Display for Dimension {
         }
         let rendered: Vec<String> = parts
             .iter()
-            .map(|(n, e)| if *e == 1 { (*n).to_string() } else { format!("{n}^{e}") })
+            .map(|(n, e)| {
+                if *e == 1 {
+                    (*n).to_string()
+                } else {
+                    format!("{n}^{e}")
+                }
+            })
             .collect();
         write!(f, "{}", rendered.join("·"))
     }
@@ -166,7 +172,10 @@ mod tests {
     #[test]
     fn overflow_is_reported_not_wrapped() {
         let d = dim(&[("length", 100)]);
-        assert!(d.checked_mul(&d).is_none(), "100 + 100 must not wrap to -56");
+        assert!(
+            d.checked_mul(&d).is_none(),
+            "100 + 100 must not wrap to -56"
+        );
         assert!(d.checked_pow(2).is_none());
     }
 

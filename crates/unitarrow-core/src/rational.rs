@@ -189,7 +189,10 @@ mod tests {
     #[test]
     fn pow_handles_negative_exponents() {
         let kilo = Rational::integer(1000);
-        assert_eq!(kilo.checked_pow(-2).unwrap(), Rational::new(1, 1_000_000).unwrap());
+        assert_eq!(
+            kilo.checked_pow(-2).unwrap(),
+            Rational::new(1, 1_000_000).unwrap()
+        );
         assert_eq!(kilo.checked_pow(0).unwrap(), Rational::ONE);
     }
 
@@ -221,7 +224,10 @@ pub struct Scale {
 }
 
 impl Scale {
-    pub const ONE: Scale = Scale { rational: Rational::ONE, pi: 0 };
+    pub const ONE: Scale = Scale {
+        rational: Rational::ONE,
+        pi: 0,
+    };
 
     pub const fn rational(r: Rational) -> Scale {
         Scale { rational: r, pi: 0 }
@@ -316,7 +322,9 @@ mod scale_tests {
         let deg = Scale::new(Rational::new(1, 180).unwrap(), 1);
         assert!(!deg.is_rational());
         // 180 degrees is exactly π radians — not 3.141592653582.
-        let half_turn = deg.checked_mul(Scale::rational(Rational::integer(180))).unwrap();
+        let half_turn = deg
+            .checked_mul(Scale::rational(Rational::integer(180)))
+            .unwrap();
         assert_eq!(half_turn, Scale::new(Rational::ONE, 1));
         assert_eq!(half_turn.to_f64(), core::f64::consts::PI);
     }
@@ -337,7 +345,10 @@ mod scale_tests {
         assert_eq!(pi.checked_mul(pi).unwrap().pi_exponent(), 2);
         assert_eq!(pi.checked_pow(3).unwrap().pi_exponent(), 3);
         assert_eq!(Scale::ONE.checked_div(pi).unwrap().pi_exponent(), -1);
-        assert!((Scale::ONE.checked_div(pi).unwrap().to_f64() - 1.0 / core::f64::consts::PI).abs() < 1e-15);
+        assert!(
+            (Scale::ONE.checked_div(pi).unwrap().to_f64() - 1.0 / core::f64::consts::PI).abs()
+                < 1e-15
+        );
     }
 
     #[test]
@@ -346,6 +357,9 @@ mod scale_tests {
         assert!(mw.is_rational());
         assert_eq!(mw.to_f64(), 1e6);
         assert_eq!(alloc::format!("{mw}"), "1000000");
-        assert_eq!(alloc::format!("{}", Scale::new(Rational::new(1, 180).unwrap(), 1)), "1/180·π");
+        assert_eq!(
+            alloc::format!("{}", Scale::new(Rational::new(1, 180).unwrap(), 1)),
+            "1/180·π"
+        );
     }
 }

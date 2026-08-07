@@ -95,9 +95,7 @@ impl Conflict {
     pub fn describe(&self) -> String {
         let mut s = format!("{:?} — {}", self.symbol, self.kind.as_str());
         if let (Some((ld, lf)), Some((fd, ff))) = (&self.local, &self.foreign) {
-            s.push_str(&format!(
-                "; here {lf} ({ld}), in the source {ff} ({fd})"
-            ));
+            s.push_str(&format!("; here {lf} ({ld}), in the source {ff} ({fd})"));
             if let Some(r) = self.ratio() {
                 if self.kind == Disagreement::Factor {
                     s.push_str(&format!(" — values differ by {:.1}%", (r - 1.0) * 100.0));
@@ -143,15 +141,15 @@ impl Boundary {
         match self {
             Boundary::SamePin | Boundary::Compatible { .. } => None,
             Boundary::Unverifiable { .. } => Some(RegistryInvalid),
-            Boundary::Incompatible(cs) => Some(
-                if cs.iter().any(|c| c.kind == Disagreement::Dimension) {
+            Boundary::Incompatible(cs) => {
+                Some(if cs.iter().any(|c| c.kind == Disagreement::Dimension) {
                     DimMismatch
                 } else if cs.iter().any(|c| c.kind == Disagreement::UnknownLocally) {
                     UnknownUnit
                 } else {
                     UnitMismatch
-                },
-            ),
+                })
+            }
         }
     }
 
@@ -250,7 +248,9 @@ pub fn check_boundary(
         }
     }
     if conflicts.is_empty() {
-        Boundary::Compatible { checked: symbols.len() }
+        Boundary::Compatible {
+            checked: symbols.len(),
+        }
     } else {
         Boundary::Incompatible(conflicts)
     }
@@ -265,7 +265,9 @@ pub fn unverifiable(local_pin: &str, foreign_pin: &str) -> Boundary {
     if local_pin == foreign_pin {
         Boundary::SamePin
     } else {
-        Boundary::Unverifiable { foreign_pin: foreign_pin.to_string() }
+        Boundary::Unverifiable {
+            foreign_pin: foreign_pin.to_string(),
+        }
     }
 }
 
@@ -292,7 +294,9 @@ mod tests {
     fn the_silent_case_is_now_loud() {
         let b = check_boundary(&oil(), "sha256:aaa", &water(), "sha256:bbb", &["bbl"]);
         assert!(!b.is_safe());
-        let Boundary::Incompatible(cs) = &b else { panic!("{b:?}") };
+        let Boundary::Incompatible(cs) = &b else {
+            panic!("{b:?}")
+        };
         assert_eq!(cs.len(), 1);
         assert_eq!(cs[0].kind, Disagreement::Factor);
         // The report must carry the magnitude — "factors differ" is not
@@ -332,10 +336,14 @@ mod tests {
     fn a_moved_zero_is_caught_even_when_the_scale_matches() {
         // Affine units fail differently: identical factor, different offset.
         // A degree scale whose zero moved is wrong at every value.
-        let a = reg("[unit.degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [5463, 20]\n");
-        let b = reg("[unit.degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [5463, 21]\n");
+        let a =
+            reg("[unit.degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [5463, 20]\n");
+        let b =
+            reg("[unit.degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [5463, 21]\n");
         let v = check_boundary(&a, "sha256:a", &b, "sha256:b", &["degC"]);
-        let Boundary::Incompatible(cs) = &v else { panic!("{v:?}") };
+        let Boundary::Incompatible(cs) = &v else {
+            panic!("{v:?}")
+        };
         assert_eq!(cs[0].kind, Disagreement::Offset);
     }
 
@@ -354,8 +362,16 @@ mod tests {
         // about.
         let b = unverifiable("sha256:local", "sha256:foreign");
         assert!(!b.is_safe());
-        assert!(b.message().contains("not available here"), "{}", b.message());
-        assert!(b.message().contains("embedded"), "names the fix: {}", b.message());
+        assert!(
+            b.message().contains("not available here"),
+            "{}",
+            b.message()
+        );
+        assert!(
+            b.message().contains("embedded"),
+            "names the fix: {}",
+            b.message()
+        );
         // ...but an equal pin needs no registry at all.
         assert_eq!(unverifiable("sha256:x", "sha256:x"), Boundary::SamePin);
     }
@@ -378,7 +394,9 @@ mod tests {
         let foreign = reg("[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n\
                            [unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n");
         let v = check_boundary(&local, "p1", &foreign, "p2", &["m", "acre_ft"]);
-        let Boundary::Incompatible(cs) = &v else { panic!("{v:?}") };
+        let Boundary::Incompatible(cs) = &v else {
+            panic!("{v:?}")
+        };
         assert_eq!(cs[0].kind, Disagreement::UnknownLocally);
         assert_eq!(v.strict_code(), Some(crate::error::ErrorCode::UnknownUnit));
     }
@@ -392,7 +410,9 @@ mod tests {
         let b = reg("[unit.m]\ndimension = \"length\"\nfactor = [100, 1]\n\
                      prefixes = \"si-engineering\"\ndisplay = { long = \"metre\" }\n");
         let v = check_boundary(&a, "p1", &b, "p2", &["km"]);
-        let Boundary::Incompatible(cs) = &v else { panic!("{v:?}") };
+        let Boundary::Incompatible(cs) = &v else {
+            panic!("{v:?}")
+        };
         assert_eq!(cs[0].symbol, "km");
         assert_eq!(cs[0].kind, Disagreement::Factor);
     }

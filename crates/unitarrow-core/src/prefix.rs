@@ -123,7 +123,11 @@ mod tests {
         let set = set_by_name("si-engineering").unwrap();
         let hi = set.iter().map(|(_, _, p)| *p).max().unwrap();
         let lo = set.iter().map(|(_, _, p)| *p).min().unwrap();
-        assert_eq!((hi, lo), (18, -18), "an asymmetric range is an arbitrary one");
+        assert_eq!(
+            (hi, lo),
+            (18, -18),
+            "an asymmetric range is an arbitrary one"
+        );
         assert!(set.iter().all(|(_, _, p)| p % 3 == 0), "10^3 steps only");
         // TWh and PWh are routine in energy work; EJ is standard globally.
         for needed in ["T", "P", "E"] {
@@ -174,11 +178,7 @@ mod tests {
 /// other would be a silent 10 % error on every mass in the table. Same shape as
 /// the `ft` / femto-tonne collision, and the same answer: enumerate what is
 /// safe, and let load-time collision checks catch the rest.
-pub const SPELLINGS: [(&str, &str); 3] = [
-    ("metre", "meter"),
-    ("litre", "liter"),
-    ("deca", "deka"),
-];
+pub const SPELLINGS: [(&str, &str); 3] = [("metre", "meter"), ("litre", "liter"), ("deca", "deka")];
 
 /// The alternate spelling of `name`, if it has one.
 ///
@@ -217,7 +217,10 @@ mod spelling_tests {
     fn composed_and_plural_names_come_along() {
         assert_eq!(spelling_variant("kilometre"), Some("kilometer".to_string()));
         assert_eq!(spelling_variant("metres"), Some("meters".to_string()));
-        assert_eq!(spelling_variant("nanometers"), Some("nanometres".to_string()));
+        assert_eq!(
+            spelling_variant("nanometers"),
+            Some("nanometres".to_string())
+        );
     }
 
     #[test]

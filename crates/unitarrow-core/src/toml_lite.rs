@@ -10,8 +10,6 @@
 //! Floats are rejected rather than ignored, because a float in a `factor` is
 //! precisely the auditability failure §7.2 exists to prevent.
 
-
-
 use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::{String, ToString};
@@ -98,7 +96,10 @@ pub fn parse(src: &str) -> Result<BTreeMap<String, Value>, String> {
         let keys = split_key(key.trim()).map_err(|e| format!("line {n}: {e}"))?;
         let (value, tail) = parse_value(rest.trim()).map_err(|e| format!("line {n}: {e}"))?;
         if !tail.trim().is_empty() {
-            return Err(format!("line {n}: trailing input after value: {:?}", tail.trim()));
+            return Err(format!(
+                "line {n}: trailing input after value: {:?}",
+                tail.trim()
+            ));
         }
 
         let mut full = path.clone();
@@ -263,7 +264,9 @@ fn parse_number(s: &str) -> Result<(Value, &str), String> {
         );
     }
     let text: String = s[..i].chars().filter(|c| *c != '_').collect();
-    let n: i128 = text.parse().map_err(|_| "integer out of range".to_string())?;
+    let n: i128 = text
+        .parse()
+        .map_err(|_| "integer out of range".to_string())?;
     Ok((Value::Integer(n), &s[i..]))
 }
 
@@ -304,7 +307,9 @@ fn parse_inline_table(s: &str) -> Result<(Value, &str), String> {
                     .into(),
             );
         }
-        let (k, r) = rest.split_once('=').ok_or("expected `key = value` in inline table")?;
+        let (k, r) = rest
+            .split_once('=')
+            .ok_or("expected `key = value` in inline table")?;
         let keys = split_key(k.trim())?;
         if keys.len() != 1 {
             return Err("dotted keys inside inline tables are not supported".into());
@@ -459,7 +464,11 @@ mod tests {
         let reparsed = parse(&written).unwrap();
         let header = reparsed.get("registry").unwrap().as_table().unwrap();
         assert_eq!(header.get("name").unwrap().as_str(), Some("c"));
-        assert!(header.get("prefix_collisions").unwrap().as_table().is_some());
+        assert!(header
+            .get("prefix_collisions")
+            .unwrap()
+            .as_table()
+            .is_some());
     }
 
     #[test]
@@ -482,7 +491,9 @@ display = { unicode = "MW", long = "megawatt" }
         let unit = doc["unit"].as_table().unwrap()["MW"].as_table().unwrap();
         assert_eq!(unit["factor"].as_pair(), Some((1_000_000, 1)));
         assert_eq!(unit["dimension"].as_str(), Some("power"));
-        let vec = doc["dimension"].as_table().unwrap()["power"].as_table().unwrap()["vector"]
+        let vec = doc["dimension"].as_table().unwrap()["power"]
+            .as_table()
+            .unwrap()["vector"]
             .as_table()
             .unwrap();
         assert_eq!(vec["time"].as_integer(), Some(-3));
@@ -521,11 +532,16 @@ display = { unicode = "MW", long = "megawatt" }
         let doc = parse("[quantity.d]\ninterval = true\n[quantity.a]\ninterval = false\n").unwrap();
         let q = doc["quantity"].as_table().unwrap();
         assert_eq!(q["d"].as_table().unwrap()["interval"].as_bool(), Some(true));
-        assert_eq!(q["a"].as_table().unwrap()["interval"].as_bool(), Some(false));
+        assert_eq!(
+            q["a"].as_table().unwrap()["interval"].as_bool(),
+            Some(false)
+        );
     }
 
     #[test]
     fn rejects_duplicate_keys() {
-        assert!(parse("[a]\nb = 1\nb = 2\n").unwrap_err().contains("duplicate"));
+        assert!(parse("[a]\nb = 1\nb = 2\n")
+            .unwrap_err()
+            .contains("duplicate"));
     }
 }

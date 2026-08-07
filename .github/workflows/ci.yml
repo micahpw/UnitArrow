@@ -48,9 +48,11 @@ jobs:
       - name: cargo clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      # Blocking as of the formatting pass that made the tree clean. It was
+      # advisory before that, because failing CI on 2k lines of pre-existing
+      # drift would have said nothing about the change under review.
       - name: cargo fmt
         run: cargo fmt --all --check
-        continue-on-error: true
 
       # §4 budgets the browser module at "tens of KB" and requires no_std. A
       # host-only build would not catch a std leak.

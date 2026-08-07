@@ -207,7 +207,11 @@ pub fn parse(input: &str) -> Result<ParsedUnit> {
             let caret = i;
             i += 1;
             if i >= bytes.len() {
-                return Err(Error::at(ErrorCode::UnitSyntax, "`^` with no integer following it", caret));
+                return Err(Error::at(
+                    ErrorCode::UnitSyntax,
+                    "`^` with no integer following it",
+                    caret,
+                ));
             }
             let mut negative = false;
             if bytes[i] == b'-' {
@@ -226,7 +230,11 @@ pub fn parse(input: &str) -> Result<ParsedUnit> {
             }
             let digits = &input[digits_start..i];
             if digits.is_empty() {
-                return Err(Error::at(ErrorCode::UnitSyntax, "`^` with no integer following it", caret));
+                return Err(Error::at(
+                    ErrorCode::UnitSyntax,
+                    "`^` with no integer following it",
+                    caret,
+                ));
             }
             if digits.len() > 1 && digits.starts_with('0') {
                 return Err(Error::at(
@@ -236,10 +244,18 @@ pub fn parse(input: &str) -> Result<ParsedUnit> {
                 ));
             }
             if negative && digits == "0" {
-                return Err(Error::at(ErrorCode::UnitSyntax, "`-0` is not a valid exponent", digits_start));
+                return Err(Error::at(
+                    ErrorCode::UnitSyntax,
+                    "`-0` is not a valid exponent",
+                    digits_start,
+                ));
             }
             let magnitude: i32 = digits.parse().map_err(|_| {
-                Error::at(ErrorCode::ExpRange, "exponent magnitude is out of range", digits_start)
+                Error::at(
+                    ErrorCode::ExpRange,
+                    "exponent magnitude is out of range",
+                    digits_start,
+                )
             })?;
             exponent = if negative { -magnitude } else { magnitude };
 
@@ -264,7 +280,11 @@ pub fn parse(input: &str) -> Result<ParsedUnit> {
                 .with_symbol(&symbol)
             })?;
 
-        terms.push(Term { symbol, exponent: effective, offset: start });
+        terms.push(Term {
+            symbol,
+            exponent: effective,
+            offset: start,
+        });
 
         skip_ws(bytes, &mut i);
         if i >= bytes.len() {
@@ -285,10 +305,15 @@ pub fn parse(input: &str) -> Result<ParsedUnit> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::{vec};
+    use alloc::vec;
 
     fn terms(s: &str) -> Vec<(String, i32)> {
-        parse(s).unwrap().terms.into_iter().map(|t| (t.symbol, t.exponent)).collect()
+        parse(s)
+            .unwrap()
+            .terms
+            .into_iter()
+            .map(|t| (t.symbol, t.exponent))
+            .collect()
     }
 
     fn err(s: &str) -> ErrorCode {
@@ -331,7 +356,9 @@ mod tests {
     #[test]
     fn whitespace_is_accepted_where_it_cannot_change_meaning() {
         // Edges and around operators: the operator makes the intent explicit.
-        for spelling in ["MW*h", " MW*h", "MW*h ", "  MW*h  ", "MW * h", "MW*  h", "MW / h"] {
+        for spelling in [
+            "MW*h", " MW*h", "MW*h ", "  MW*h  ", "MW * h", "MW*  h", "MW / h",
+        ] {
             assert!(parse(spelling).is_ok(), "expected {spelling:?} to parse");
         }
         assert_eq!(terms("MW * h"), vec![("MW".into(), 1), ("h".into(), 1)]);
@@ -361,20 +388,24 @@ mod tests {
     #[test]
     fn rejects_the_ruled_out_forms() {
         for bad in [
-            "1*MW",     // bare 1 outside the inverse head
-            "MW**h",    // doubled operator
-            "MW^",      // caret with no integer
-            "MW*",      // trailing operator
-            "(m*s)",    // parentheses
-            "0.5*MW",   // numeric scale factor
-            "°C",       // non-ASCII symbol
-            "MW^+2",    // explicit plus
-            "MW^02",    // leading zero
-            "m^-0",     // negative zero
-            "MW/s^-1",  // double negative
-            "m^1/2",    // v2 rational exponent
+            "1*MW",    // bare 1 outside the inverse head
+            "MW**h",   // doubled operator
+            "MW^",     // caret with no integer
+            "MW*",     // trailing operator
+            "(m*s)",   // parentheses
+            "0.5*MW",  // numeric scale factor
+            "°C",      // non-ASCII symbol
+            "MW^+2",   // explicit plus
+            "MW^02",   // leading zero
+            "m^-0",    // negative zero
+            "MW/s^-1", // double negative
+            "m^1/2",   // v2 rational exponent
         ] {
-            assert_eq!(err(bad), ErrorCode::UnitSyntax, "expected E_UNIT_SYNTAX for {bad:?}");
+            assert_eq!(
+                err(bad),
+                ErrorCode::UnitSyntax,
+                "expected E_UNIT_SYNTAX for {bad:?}"
+            );
         }
     }
 
@@ -393,7 +424,10 @@ mod tests {
 
     #[test]
     fn at_signs_and_underscores_are_symbol_characters() {
-        assert_eq!(terms("household_yr@CO"), vec![("household_yr@CO".into(), 1)]);
+        assert_eq!(
+            terms("household_yr@CO"),
+            vec![("household_yr@CO".into(), 1)]
+        );
         assert_eq!(terms("delta_degC"), vec![("delta_degC".into(), 1)]);
     }
 

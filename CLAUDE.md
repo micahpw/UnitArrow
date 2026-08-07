@@ -29,6 +29,18 @@ and `js/` are still name-reservation stubs.
 cargo test                            # unit, conformance, composition, repo invariants, doctests
 ```
 
+Enable the pre-commit hooks once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+They run `cargo fmt --check`, the repository invariants, and `clippy -D
+warnings`, and refuse a staged compiled artifact — under two seconds on a warm
+cache. `cargo test` and the Python suite are deliberately left to CI: a hook
+that takes ten seconds gets disabled, and a disabled hook catches nothing.
+`--no-verify` skips them for a work-in-progress commit.
+
 CI (`.github/workflows/ci.yml`) runs that plus `clippy -D warnings`, the wasm
 build, fixture validation against `conformance/schema/fixture.schema.json`, and
 a determinism check on the docs generator. `tests/repo_invariants.rs` guards the

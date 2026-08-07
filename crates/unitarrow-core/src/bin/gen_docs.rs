@@ -12,16 +12,19 @@ use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::path::{Path, PathBuf};
 
-use unitarrow_core::json_lite::{self, Json};
 use unitarrow_core::boundary::{check_boundary, unverifiable};
 use unitarrow_core::compose::{compose, contested, verify_pin, Embedding, Resolution, Source};
+use unitarrow_core::json_lite::{self, Json};
 use unitarrow_core::{
-    canonicalize, check_unit_token, commensurable, conversion, delta_of, units_equal, CanonicalUnit,
-    Rational, Registry, SPEC_VERSION,
+    canonicalize, check_unit_token, commensurable, conversion, delta_of, units_equal,
+    CanonicalUnit, Rational, Registry, SPEC_VERSION,
 };
 
 fn repo_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().unwrap()
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap()
 }
 
 fn main() {
@@ -122,7 +125,13 @@ fn fmt_dim(u: &CanonicalUnit) -> String {
         return "*dimensionless*".to_string();
     }
     s.iter()
-        .map(|(n, e)| if *e == 1 { n.to_string() } else { format!("{n}<sup>{e}</sup>") })
+        .map(|(n, e)| {
+            if *e == 1 {
+                n.to_string()
+            } else {
+                format!("{n}<sup>{e}</sup>")
+            }
+        })
         .collect::<Vec<_>>()
         .join(" · ")
 }
@@ -136,9 +145,19 @@ fn fmt_f64(v: f64) -> String {
 }
 
 fn canon_row(input: &str, registry: &Registry, note: &str) -> String {
-    let shown = if input.is_empty() { "*(empty)*".to_string() } else { format!("`{input}`") };
+    let shown = if input.is_empty() {
+        "*(empty)*".to_string()
+    } else {
+        format!("`{input}`")
+    };
     match canonicalize(input, registry, 1) {
-        Ok(u) => format!("| {} | `{}` | {} | {} |\n", shown, u.canonical, fmt_dim(&u), note),
+        Ok(u) => format!(
+            "| {} | `{}` | {} | {} |\n",
+            shown,
+            u.canonical,
+            fmt_dim(&u),
+            note
+        ),
         Err(e) => format!("| {} | **`{}`** | — | {} |\n", shown, e.code_str(), note),
     }
 }
@@ -185,12 +204,30 @@ fn page_index(registry: &Registry) -> String {
 
     writeln!(s, "## Pages\n").unwrap();
     for (page, blurb) in [
-        ("canonical-form.md", "normalization, ordering, exponent merging, division associativity, the affine rules"),
-        ("ambiguity.md", "when one spelling means two things — the `ft` case, worked through"),
-        ("conversions.md", "exact-rational factors, and the temperature traps the machinery exists for"),
-        ("errors.md", "every §10 code this implementation raises, with a live example each"),
-        ("registry.md", "the loaded registry, and the load-time guardrails against a hostile catalog"),
-        ("conformance.md", "the golden-file suite, run against this build"),
+        (
+            "canonical-form.md",
+            "normalization, ordering, exponent merging, division associativity, the affine rules",
+        ),
+        (
+            "ambiguity.md",
+            "when one spelling means two things — the `ft` case, worked through",
+        ),
+        (
+            "conversions.md",
+            "exact-rational factors, and the temperature traps the machinery exists for",
+        ),
+        (
+            "errors.md",
+            "every §10 code this implementation raises, with a live example each",
+        ),
+        (
+            "registry.md",
+            "the loaded registry, and the load-time guardrails against a hostile catalog",
+        ),
+        (
+            "conformance.md",
+            "the golden-file suite, run against this build",
+        ),
     ] {
         let title = page.trim_end_matches(".md").replace('-', " ");
         writeln!(s, "- [{}]({page}) — {blurb}", title).unwrap();
@@ -348,7 +385,12 @@ fn page_canonical(registry: &Registry) -> String {
 
     writeln!(s, "## Equality is not commensurability\n").unwrap();
     writeln!(s, "```text").unwrap();
-    for (a, b) in [("MW*h", "MWh"), ("MW/h", "MW*h^-1"), ("MW", "kW"), ("MW", "h")] {
+    for (a, b) in [
+        ("MW*h", "MWh"),
+        ("MW/h", "MW*h^-1"),
+        ("MW", "kW"),
+        ("MW", "h"),
+    ] {
         let ua = canonicalize(a, registry, 1).unwrap();
         let ub = canonicalize(b, registry, 1).unwrap();
         writeln!(
@@ -399,7 +441,11 @@ fn page_conversions(registry: &Registry) -> String {
          unit of its dimension automatically.\n"
     )
     .unwrap();
-    writeln!(s, "| From | To | Stored: from | Stored: to | Computed factor | 1 unit becomes |").unwrap();
+    writeln!(
+        s,
+        "| From | To | Stored: from | Stored: to | Computed factor | 1 unit becomes |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|---|---|").unwrap();
     for (a, b) in [
         ("MW", "kW"),
@@ -490,9 +536,16 @@ fn page_conversions(registry: &Registry) -> String {
          comparing the two numbers would be meaningless.\n"
     )
     .unwrap();
-    writeln!(s, "| Unit | Factor | Offset (exact) | Offset in K | Delta unit | Affine |").unwrap();
+    writeln!(
+        s,
+        "| Unit | Factor | Offset (exact) | Offset in K | Delta unit | Affine |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|---|---|").unwrap();
-    let mut temps: Vec<_> = registry.units().filter(|u| u.dimension_name == "temperature").collect();
+    let mut temps: Vec<_> = registry
+        .units()
+        .filter(|u| u.dimension_name == "temperature")
+        .collect();
     temps.sort_by_key(|u| u.symbol.as_bytes().to_vec());
     for u in temps {
         writeln!(
@@ -500,8 +553,12 @@ fn page_conversions(registry: &Registry) -> String {
             "| `{}` | `{:?}` | {} | {} | `{}` | {} |",
             u.symbol,
             u.factor,
-            u.offset.map(|o| format!("`{o:?}`")).unwrap_or_else(|| "—".into()),
-            u.offset.map(|o| fmt_f64(o.to_f64())).unwrap_or_else(|| "—".into()),
+            u.offset
+                .map(|o| format!("`{o:?}`"))
+                .unwrap_or_else(|| "—".into()),
+            u.offset
+                .map(|o| fmt_f64(o.to_f64()))
+                .unwrap_or_else(|| "—".into()),
             delta_of(&u.symbol, registry).unwrap_or_else(|| "—".into()),
             if u.is_affine() { "yes" } else { "no" }
         )
@@ -517,7 +574,13 @@ fn page_conversions(registry: &Registry) -> String {
     .unwrap();
     let c = conversion("MW*h", "Btu", registry).unwrap();
     writeln!(s, "```text").unwrap();
-    writeln!(s, "factor  = {} / {}", c.factor.ratio().numerator(), c.factor.ratio().denominator()).unwrap();
+    writeln!(
+        s,
+        "factor  = {} / {}",
+        c.factor.ratio().numerator(),
+        c.factor.ratio().denominator()
+    )
+    .unwrap();
     writeln!(s, "as f64  = {}", c.factor.to_f64()).unwrap();
     writeln!(s, "1 MWh   = {} Btu (IT)", c.apply(1.0)).unwrap();
     writeln!(s, "```\n").unwrap();
@@ -531,7 +594,12 @@ fn page_conversions(registry: &Registry) -> String {
     )
     .unwrap();
     writeln!(s, "```text").unwrap();
-    writeln!(s, "exact:  32 degF → {} K", f.apply_exact(Rational::integer(32)).unwrap()).unwrap();
+    writeln!(
+        s,
+        "exact:  32 degF → {} K",
+        f.apply_exact(Rational::integer(32)).unwrap()
+    )
+    .unwrap();
     writeln!(s, "f64:    32 degF → {} K", f.apply(32.0)).unwrap();
     writeln!(s, "```").unwrap();
     s
@@ -543,20 +611,48 @@ fn page_conversions(registry: &Registry) -> String {
 /// A 20-unit SI-ish registry, used to show what prefix expansion costs.
 fn alloc_registry(prefixes: &str) -> String {
     let bases = [
-        ("m", "length", "metre"), ("g", "mass", "gram"), ("s", "time", "second"),
-        ("A", "current", "ampere"), ("K", "temperature", "kelvin"),
-        ("mol", "amount", "mole"), ("cd", "luminosity", "candela"),
-        ("W", "power", "watt"), ("J", "energy", "joule"), ("N", "force", "newton"),
-        ("Pa", "pressure", "pascal"), ("Hz", "frequency", "hertz"),
-        ("V", "voltage", "volt"), ("ohm", "resistance", "ohm"),
-        ("F", "capacitance", "farad"), ("C", "charge", "coulomb"),
-        ("Wb", "flux", "weber"), ("H", "inductance", "henry"),
-        ("lm", "luminous_flux", "lumen"), ("Bq", "activity", "becquerel"),
+        ("m", "length", "metre"),
+        ("g", "mass", "gram"),
+        ("s", "time", "second"),
+        ("A", "current", "ampere"),
+        ("K", "temperature", "kelvin"),
+        ("mol", "amount", "mole"),
+        ("cd", "luminosity", "candela"),
+        ("W", "power", "watt"),
+        ("J", "energy", "joule"),
+        ("N", "force", "newton"),
+        ("Pa", "pressure", "pascal"),
+        ("Hz", "frequency", "hertz"),
+        ("V", "voltage", "volt"),
+        ("ohm", "resistance", "ohm"),
+        ("F", "capacitance", "farad"),
+        ("C", "charge", "coulomb"),
+        ("Wb", "flux", "weber"),
+        ("H", "inductance", "henry"),
+        ("lm", "luminous_flux", "lumen"),
+        ("Bq", "activity", "becquerel"),
     ];
-    let mut src = String::from("[registry]\nschema_version = 1\nname = \"cost\"\nversion = \"1\"\n");
-    for d in ["power", "energy", "force", "pressure", "frequency", "voltage", "resistance",
-              "capacitance", "charge", "flux", "inductance", "luminous_flux", "activity"] {
-        let _ = writeln!(src, "[dimension.{d}]\nvector = {{ mass = 1, length = 2, time = -3 }}");
+    let mut src =
+        String::from("[registry]\nschema_version = 1\nname = \"cost\"\nversion = \"1\"\n");
+    for d in [
+        "power",
+        "energy",
+        "force",
+        "pressure",
+        "frequency",
+        "voltage",
+        "resistance",
+        "capacitance",
+        "charge",
+        "flux",
+        "inductance",
+        "luminous_flux",
+        "activity",
+    ] {
+        let _ = writeln!(
+            src,
+            "[dimension.{d}]\nvector = {{ mass = 1, length = 2, time = -3 }}"
+        );
     }
     for (sym, dim, long) in bases {
         let _ = write!(
@@ -573,7 +669,11 @@ fn alloc_registry(prefixes: &str) -> String {
 
 fn section_prefixes() -> String {
     let mut s = String::new();
-    writeln!(s, "\n## Kilo, mega, tera — one authored entry, N generated\n").unwrap();
+    writeln!(
+        s,
+        "\n## Kilo, mega, tera — one authored entry, N generated\n"
+    )
+    .unwrap();
     writeln!(
         s,
         "§6.1 requires prefixed units to be **distinct registry entries**, so \
@@ -628,7 +728,10 @@ display = { long = "watt", plural = "watts" }
             u.symbol,
             u.factor,
             u.display.long.as_deref().unwrap_or("—"),
-            u.prefixed_from.as_deref().map(|b| format!("`{b}`")).unwrap_or_else(|| "*authored*".into())
+            u.prefixed_from
+                .as_deref()
+                .map(|b| format!("`{b}`"))
+                .unwrap_or_else(|| "*authored*".into())
         )
         .unwrap();
     }
@@ -643,7 +746,11 @@ display = { long = "watt", plural = "watts" }
          checking — so a symbol can never be reachable both ways.\n"
     )
     .unwrap();
-    writeln!(s, "| `prefixes` | Authored | Stored | Resolvable symbols | Resolvable names |").unwrap();
+    writeln!(
+        s,
+        "| `prefixes` | Authored | Stored | Resolvable symbols | Resolvable names |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|---|").unwrap();
     for set in ["", "si-engineering", "si"] {
         let src = alloc_registry(set);
@@ -651,7 +758,11 @@ display = { long = "watt", plural = "watts" }
             writeln!(
                 s,
                 "| {} | 20 | {} | {} | {} |",
-                if set.is_empty() { "*(none)*".into() } else { format!("`\"{set}\"`") },
+                if set.is_empty() {
+                    "*(none)*".into()
+                } else {
+                    format!("`\"{set}\"`")
+                },
                 r.authored_count(),
                 r.unit_count(),
                 r.candidates().len()
@@ -727,7 +838,12 @@ display = { long = "watt", plural = "watts" }
         let set = unitarrow_core::prefix::set_by_name(name).unwrap();
         let hi = set.iter().map(|(_, _, p)| *p).max().unwrap();
         let lo = set.iter().map(|(_, _, p)| *p).min().unwrap();
-        writeln!(s, "| `\"{name}\"` | {} | 10<sup>{lo}</sup> … 10<sup>{hi}</sup> |", set.len()).unwrap();
+        writeln!(
+            s,
+            "| `\"{name}\"` | {} | 10<sup>{lo}</sup> … 10<sup>{hi}</sup> |",
+            set.len()
+        )
+        .unwrap();
     }
     writeln!(
         s,
@@ -737,7 +853,11 @@ display = { long = "watt", plural = "watts" }
     )
     .unwrap();
 
-    writeln!(s, "### Why expansion, and not parsing prefixes at resolution time\n").unwrap();
+    writeln!(
+        s,
+        "### Why expansion, and not parsing prefixes at resolution time\n"
+    )
+    .unwrap();
     writeln!(
         s,
         "Splitting an unresolved symbol into prefix + base would keep the \
@@ -811,7 +931,11 @@ display = { long = "watt", plural = "watts" }
     ];
     for (label, toml) in cases {
         let verdict = match Registry::from_toml(&toml) {
-            Ok(r) => format!("loads — {} units resolvable from {} authored", r.unit_count(), r.authored_count()),
+            Ok(r) => format!(
+                "loads — {} units resolvable from {} authored",
+                r.unit_count(),
+                r.authored_count()
+            ),
             Err(e) => format!("`{}` — {}", e.code_str(), e.message()),
         };
         writeln!(s, "| {label} | {verdict} |").unwrap();
@@ -865,7 +989,11 @@ fn page_errors(registry: &Registry) -> String {
     writeln!(s, "| Input | Code | Message the user sees |").unwrap();
     writeln!(s, "|---|---|---|").unwrap();
     for (input, _note) in &cases {
-        let shown = if input.is_empty() { "*(empty)*".to_string() } else { format!("`{input}`") };
+        let shown = if input.is_empty() {
+            "*(empty)*".to_string()
+        } else {
+            format!("`{input}`")
+        };
         match canonicalize(input, registry, 1) {
             Err(e) => writeln!(
                 s,
@@ -874,7 +1002,12 @@ fn page_errors(registry: &Registry) -> String {
                 e.message().replace('|', "\\|")
             )
             .unwrap(),
-            Ok(u) => writeln!(s, "| {shown} | *accepted* | canonical form `{}` |", u.canonical).unwrap(),
+            Ok(u) => writeln!(
+                s,
+                "| {shown} | *accepted* | canonical form `{}` |",
+                u.canonical
+            )
+            .unwrap(),
         }
     }
 
@@ -943,7 +1076,9 @@ fn page_errors(registry: &Registry) -> String {
                 s,
                 "{input:<14} {:<18} offset {:<5} {}",
                 e.code_str(),
-                e.offset().map(|o| o.to_string()).unwrap_or_else(|| "—".into()),
+                e.offset()
+                    .map(|o| o.to_string())
+                    .unwrap_or_else(|| "—".into()),
                 e.message()
             )
             .unwrap();
@@ -977,8 +1112,17 @@ fn section_tripped_up(registry: &Registry) -> String {
     writeln!(s, "| You type | Resolves to | Which is |").unwrap();
     writeln!(s, "|---|---|---|").unwrap();
     for verbose in [
-        "megawatt", "megawatts", "kilowatt", "milliwatt", "watt", "hour", "joule", "metre",
-        "second", "megawatt*hour", "kilowatt/hour",
+        "megawatt",
+        "megawatts",
+        "kilowatt",
+        "milliwatt",
+        "watt",
+        "hour",
+        "joule",
+        "metre",
+        "second",
+        "megawatt*hour",
+        "kilowatt/hour",
     ] {
         match canonicalize(verbose, registry, 1) {
             Ok(u) => {
@@ -1040,11 +1184,25 @@ fn section_tripped_up(registry: &Registry) -> String {
     .unwrap();
     writeln!(s, "| Symbol | Reads as |").unwrap();
     writeln!(s, "|---|---|").unwrap();
-    for sym in ["MW", "mW", "kW", "W", "MWh", "h", "Btu", "degC", "delta_degC", "pu", "USD"] {
+    for sym in [
+        "MW",
+        "mW",
+        "kW",
+        "W",
+        "MWh",
+        "h",
+        "Btu",
+        "degC",
+        "delta_degC",
+        "pu",
+        "USD",
+    ] {
         writeln!(
             s,
             "| `{sym}` | {} |",
-            registry.describe(sym).unwrap_or_else(|| "*no display name*".into())
+            registry
+                .describe(sym)
+                .unwrap_or_else(|| "*no display name*".into())
         )
         .unwrap();
     }
@@ -1060,7 +1218,14 @@ fn section_tripped_up(registry: &Registry) -> String {
     .unwrap();
     writeln!(s, "| You type | You get |").unwrap();
     writeln!(s, "|---|---|").unwrap();
-    for input in ["\u{b0}C", "\u{b0}F", "\u{b0}C*h", "\u{b5}W", "\u{3bc}W", "\u{3a9}m"] {
+    for input in [
+        "\u{b0}C",
+        "\u{b0}F",
+        "\u{b0}C*h",
+        "\u{b5}W",
+        "\u{3bc}W",
+        "\u{3a9}m",
+    ] {
         match canonicalize(input, registry, 1) {
             Err(e) => writeln!(s, "| `{input}` | {} |", e.message().replace('|', "\\|")).unwrap(),
             Ok(u) => writeln!(s, "| `{input}` | accepted → `{}` |", u.canonical).unwrap(),
@@ -1138,7 +1303,11 @@ fn page_registry(registry: &Registry, src: &str) -> String {
 
     writeln!(s, "## Units, in bytewise symbol order\n").unwrap();
     writeln!(s, "This is the order canonical form uses.\n").unwrap();
-    writeln!(s, "| Symbol | Dimension | Factor | Offset | Delta | Display | Aliases |").unwrap();
+    writeln!(
+        s,
+        "| Symbol | Dimension | Factor | Offset | Delta | Display | Aliases |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|---|---|---|").unwrap();
     let mut units: Vec<_> = registry.units().collect();
     units.sort_by_key(|u| u.symbol.as_bytes().to_vec());
@@ -1155,10 +1324,19 @@ fn page_registry(registry: &Registry, src: &str) -> String {
             u.symbol,
             u.dimension_name,
             u.factor,
-            u.offset.map(|o| format!("`{o}`")).unwrap_or_else(|| "—".into()),
-            u.delta.as_deref().map(|d| format!("`{d}`")).unwrap_or_else(|| "—".into()),
+            u.offset
+                .map(|o| format!("`{o}`"))
+                .unwrap_or_else(|| "—".into()),
+            u.delta
+                .as_deref()
+                .map(|d| format!("`{d}`"))
+                .unwrap_or_else(|| "—".into()),
             u.display.preferred(&u.symbol),
-            if aliases.is_empty() { "—".to_string() } else { format!("`{}`", aliases.join("`, `")) }
+            if aliases.is_empty() {
+                "—".to_string()
+            } else {
+                format!("`{}`", aliases.join("`, `"))
+            }
         )
         .unwrap();
     }
@@ -1169,7 +1347,12 @@ fn page_registry(registry: &Registry, src: &str) -> String {
     aliases.sort();
     for (alias, canonical) in aliases {
         let out = canonicalize(alias, registry, 1).unwrap();
-        writeln!(s, "{alias:<12} → {canonical:<12} canonical output: {}", out.canonical).unwrap();
+        writeln!(
+            s,
+            "{alias:<12} → {canonical:<12} canonical output: {}",
+            out.canonical
+        )
+        .unwrap();
     }
     writeln!(s, "```\n").unwrap();
     writeln!(
@@ -1204,35 +1387,74 @@ fn page_registry(registry: &Registry, src: &str) -> String {
         ),
         (
             "claim one alias from two units",
-            src.replace(r#"aliases = ["degreeF", "F"]"#, r#"aliases = ["degreeF", "hr"]"#),
+            src.replace(
+                r#"aliases = ["degreeF", "F"]"#,
+                r#"aliases = ["degreeF", "hr"]"#,
+            ),
         ),
-        ("zero denominator in a factor", src.replace("factor = [3600, 1]", "factor = [3600, 0]")),
-        ("zero scale", src.replace("factor = [3600, 1]", "factor = [0, 1]")),
-        ("negative scale", src.replace("factor = [3600, 1]", "factor = [-3600, 1]")),
-        ("unreduced factor", src.replace("factor = [3600, 1]", "factor = [36000, 10]")),
+        (
+            "zero denominator in a factor",
+            src.replace("factor = [3600, 1]", "factor = [3600, 0]"),
+        ),
+        (
+            "zero scale",
+            src.replace("factor = [3600, 1]", "factor = [0, 1]"),
+        ),
+        (
+            "negative scale",
+            src.replace("factor = [3600, 1]", "factor = [-3600, 1]"),
+        ),
+        (
+            "unreduced factor",
+            src.replace("factor = [3600, 1]", "factor = [36000, 10]"),
+        ),
         (
             "misspelled key (`factr`)",
-            src.replace("[unit.m]\ndimension = \"length\"\nfactor", "[unit.m]\ndimension = \"length\"\nfactr"),
+            src.replace(
+                "[unit.m]\ndimension = \"length\"\nfactor",
+                "[unit.m]\ndimension = \"length\"\nfactr",
+            ),
         ),
         (
             "dimension exponent outside i8",
-            src.replace("vector = { mass = 1, length = 2, time = -3 }", "vector = { mass = 1, length = 200 }"),
+            src.replace(
+                "vector = { mass = 1, length = 2, time = -3 }",
+                "vector = { mass = 1, length = 200 }",
+            ),
         ),
         (
             "unknown base dimension",
-            src.replace("vector = { mass = 1, length = 2, time = -2 }", "vector = { energy = 1 }"),
+            src.replace(
+                "vector = { mass = 1, length = 2, time = -2 }",
+                "vector = { energy = 1 }",
+            ),
         ),
         (
             "redefine a base dimension",
-            src.replace("[dimension.length]\nvector = { length = 1 }", "[dimension.length]\nvector = { mass = 1 }"),
+            src.replace(
+                "[dimension.length]\nvector = { length = 1 }",
+                "[dimension.length]\nvector = { mass = 1 }",
+            ),
         ),
-        ("delta pointing at a missing unit", src.replace(r#"delta = "delta_degC""#, r#"delta = "delta_nope""#)),
+        (
+            "delta pointing at a missing unit",
+            src.replace(r#"delta = "delta_degC""#, r#"delta = "delta_nope""#),
+        ),
         (
             "delta carrying an offset",
-            src.replace("[unit.delta_degC]\ndimension = \"temperature\"\nfactor = [1, 1]", "[unit.delta_degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [1, 1]"),
+            src.replace(
+                "[unit.delta_degC]\ndimension = \"temperature\"\nfactor = [1, 1]",
+                "[unit.delta_degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [1, 1]",
+            ),
         ),
-        ("a float where an exact rational belongs", src.replace("factor = [3600, 1]", "factor = 3600.0")),
-        ("missing registry name", src.replace("name = \"conformance-core\"", "")),
+        (
+            "a float where an exact rational belongs",
+            src.replace("factor = [3600, 1]", "factor = 3600.0"),
+        ),
+        (
+            "missing registry name",
+            src.replace("name = \"conformance-core\"", ""),
+        ),
         (
             "symbol that would break canonical form",
             src.replace("[unit.MW]", "[unit.\"M*W\"]"),
@@ -1254,13 +1476,19 @@ fn page_registry(registry: &Registry, src: &str) -> String {
         writeln!(
             s,
             "| `{id}` | {} | {} | {} |",
-            q.parent.as_deref().map(|p| format!("`{p}`")).unwrap_or_else(|| "—".into()),
+            q.parent
+                .as_deref()
+                .map(|p| format!("`{p}`"))
+                .unwrap_or_else(|| "—".into()),
             match q.interval {
                 Some(true) => "`true`".to_string(),
                 Some(false) => "`false`".to_string(),
                 None => "*no claim*".to_string(),
             },
-            q.rate_of.as_deref().map(|r| format!("`{r}`")).unwrap_or_else(|| "—".into())
+            q.rate_of
+                .as_deref()
+                .map(|r| format!("`{r}`"))
+                .unwrap_or_else(|| "—".into())
         )
         .unwrap();
     }
@@ -1312,9 +1540,22 @@ fn page_playground(registry: &Registry) -> String {
   <div class="ua-chips">{}</div>
 </div>"#,
         [
-            "MW/h", "1/s", "h*MW", "W/K/m^2", "megawatt*hour", "MW*h/MWh",
-            "m^2*m^-2", "degC", "degC*h", "\u{b0}C", "\u{b5}W", "Megawatt",
-            "m^100*m^100", "MW * h", "m s", "0.5*MW",
+            "MW/h",
+            "1/s",
+            "h*MW",
+            "W/K/m^2",
+            "megawatt*hour",
+            "MW*h/MWh",
+            "m^2*m^-2",
+            "degC",
+            "degC*h",
+            "\u{b0}C",
+            "\u{b5}W",
+            "Megawatt",
+            "m^100*m^100",
+            "MW * h",
+            "m s",
+            "0.5*MW",
         ]
         .iter()
         .map(|e| format!(r#"<button data-example="{}">{}</button>"#, e, e))
@@ -1438,8 +1679,14 @@ fn page_ambiguity() -> String {
     writeln!(s, "| Registry contains | `ft` resolves to |").unwrap();
     writeln!(s, "|---|---|").unwrap();
     for (label, src) in [
-        ("`ft` (foot), and `t` **not** prefixed", format!("{base}{foot}[unit.t]\ndimension = \"mass\"\nfactor = [1000, 1]\n")),
-        ("`t` prefixed, and no `ft` declared", format!("{base}{tonne}")),
+        (
+            "`ft` (foot), and `t` **not** prefixed",
+            format!("{base}{foot}[unit.t]\ndimension = \"mass\"\nfactor = [1000, 1]\n"),
+        ),
+        (
+            "`t` prefixed, and no `ft` declared",
+            format!("{base}{tonne}"),
+        ),
     ] {
         let verdict = match Registry::from_toml(&src) {
             Ok(r) => match r.resolve("ft") {
@@ -1457,7 +1704,11 @@ fn page_ambiguity() -> String {
     }
 
     // ---- 2. the collision, unresolved -----------------------------------
-    writeln!(s, "\n## Both readings present: the registry will not load\n").unwrap();
+    writeln!(
+        s,
+        "\n## Both readings present: the registry will not load\n"
+    )
+    .unwrap();
     writeln!(
         s,
         "This is deliberate. A registry that resolves `ft` differently depending \
@@ -1485,7 +1736,17 @@ fn page_ambiguity() -> String {
     let r = Registry::from_toml(&resolved).expect("resolved registry loads");
     writeln!(s, "| Input | Resolves to | Dimension | Reads as |").unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
-    for q in ["ft", "foot", "t", "tonne", "kt", "Mt", "Gt", "femtotonne", "ft*s^-1"] {
+    for q in [
+        "ft",
+        "foot",
+        "t",
+        "tonne",
+        "kt",
+        "Mt",
+        "Gt",
+        "femtotonne",
+        "ft*s^-1",
+    ] {
         match canonicalize(q, &r, 1) {
             Ok(u) => writeln!(
                 s,
@@ -1533,7 +1794,10 @@ fn page_ambiguity() -> String {
     .unwrap();
     writeln!(s, "| Registry | Long name | Factor | 10 km reads as |").unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
-    for (label, factor) in [("international", "[381, 1250]"), ("US survey", "[1200, 3937]")] {
+    for (label, factor) in [
+        ("international", "[381, 1250]"),
+        ("US survey", "[1200, 3937]"),
+    ] {
         let src = format!(
             "{base}[unit.ft]\ndimension = \"length\"\nfactor = {factor}\n\
              display = {{ long = \"foot\" }}\n"
@@ -1570,12 +1834,36 @@ fn page_ambiguity() -> String {
     writeln!(s, "| Concern | Layer | Mechanism |").unwrap();
     writeln!(s, "|---|---|---|").unwrap();
     for (concern, layer, how) in [
-        ("Two readings of one spelling", "registry, at load", "`prefix_collisions`, or the load fails"),
-        ("Same spelling, different registries", "the artifact", "registry pin: name + version + content hash (§5.6)"),
-        ("User does not know the symbol", "input", "verbose names — `megawatt`, `kilometer`"),
-        ("User typed a display form", "input", "`°C` reports *write `degC`*"),
-        ("User wants to check a tag", "output", "reverse lookup — `MW` reads as *megawatt*"),
-        ("Reader wants something legible", "display", "registry display forms, not canonical form"),
+        (
+            "Two readings of one spelling",
+            "registry, at load",
+            "`prefix_collisions`, or the load fails",
+        ),
+        (
+            "Same spelling, different registries",
+            "the artifact",
+            "registry pin: name + version + content hash (§5.6)",
+        ),
+        (
+            "User does not know the symbol",
+            "input",
+            "verbose names — `megawatt`, `kilometer`",
+        ),
+        (
+            "User typed a display form",
+            "input",
+            "`°C` reports *write `degC`*",
+        ),
+        (
+            "User wants to check a tag",
+            "output",
+            "reverse lookup — `MW` reads as *megawatt*",
+        ),
+        (
+            "Reader wants something legible",
+            "display",
+            "registry display forms, not canonical form",
+        ),
     ] {
         writeln!(s, "| {concern} | {layer} | {how} |").unwrap();
     }
@@ -1676,7 +1964,11 @@ fn section_reserved() -> String {
                      [unit.t]\ndimension = \"mass\"\nfactor = [1000, 1]\n\
                      prefixes = \"si-engineering\"\ndisplay = { long = \"tonne\" }\n";
     let r2 = Registry::from_toml(contested).expect("loads");
-    writeln!(s, "| Spelling | Authored as | Prefixed reading | Why the author chose it |").unwrap();
+    writeln!(
+        s,
+        "| Spelling | Authored as | Prefixed reading | Why the author chose it |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
     for risk in r2.collision_risks() {
         let reading = prefixed_reading(&r2, &risk);
@@ -1759,9 +2051,11 @@ fn page_conformance(root: &Path) -> String {
         let doc = json_lite::parse(&std::fs::read_to_string(path).unwrap()).unwrap();
         let reg_name = doc.get("registry").and_then(Json::as_str).unwrap();
         let reg_file = reg_name.split('@').next().unwrap();
-        let reg_src =
-            std::fs::read_to_string(root.join("conformance/registry").join(format!("{reg_file}.toml")))
-                .unwrap();
+        let reg_src = std::fs::read_to_string(
+            root.join("conformance/registry")
+                .join(format!("{reg_file}.toml")),
+        )
+        .unwrap();
         let registry = Registry::from_toml(&reg_src).unwrap();
 
         let cases = doc.get("cases").and_then(Json::as_array).unwrap();
@@ -1845,7 +2139,11 @@ fn case_passes(case: &Json, registry: &Registry) -> bool {
     let expect = case.get("expect").unwrap();
     let decoded: Result<String, unitarrow_core::Error> = match input.get("unit_json") {
         Some(tok) => check_unit_token(tok.as_str().unwrap()).map(str::to_string),
-        None => Ok(input.get("unit").and_then(Json::as_str).unwrap().to_string()),
+        None => Ok(input
+            .get("unit")
+            .and_then(Json::as_str)
+            .unwrap()
+            .to_string()),
     };
     let result = decoded.and_then(|s| canonicalize(&s, registry, grammar));
     match expect.get("outcome").and_then(Json::as_str) {
@@ -1856,7 +2154,11 @@ fn case_passes(case: &Json, registry: &Registry) -> bool {
             let want: BTreeMap<String, i64> = expect
                 .get("dimension")
                 .and_then(Json::as_object)
-                .map(|o| o.iter().filter_map(|(k, v)| v.as_i64().map(|n| (k.clone(), n))).collect())
+                .map(|o| {
+                    o.iter()
+                        .filter_map(|(k, v)| v.as_i64().map(|n| (k.clone(), n)))
+                        .collect()
+                })
                 .unwrap_or_default();
             let got: BTreeMap<String, i64> = u
                 .dimension
@@ -1864,7 +2166,8 @@ fn case_passes(case: &Json, registry: &Registry) -> bool {
                 .into_iter()
                 .map(|(k, v)| (k.to_string(), v as i64))
                 .collect();
-            Some(u.canonical.as_str()) == expect.get("canonical").and_then(Json::as_str) && got == want
+            Some(u.canonical.as_str()) == expect.get("canonical").and_then(Json::as_str)
+                && got == want
         }),
         _ => false,
     }
@@ -1941,7 +2244,9 @@ fn page_composition() -> String {
          Register entries: {} (no composition story), {} (combining across \
          registries is silently wrong), {} (a multi-registry table has no \
          describable provenance).\n",
-        amb("AMB-058"), amb("AMB-059"), amb("AMB-060")
+        amb("AMB-058"),
+        amb("AMB-059"),
+        amb("AMB-060")
     )
     .unwrap();
 
@@ -1956,7 +2261,11 @@ fn page_composition() -> String {
     .unwrap();
     let oil = Registry::from_toml(&oil_source().toml).unwrap();
     let water = Registry::from_toml(&water_source().toml).unwrap();
-    writeln!(s, "| Registry | `bbl` canonicalizes to | Dimension | Factor |").unwrap();
+    writeln!(
+        s,
+        "| Registry | `bbl` canonicalizes to | Dimension | Factor |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
     for (label, r) in [("oil@1.4", &oil), ("water@2.1", &water)] {
         let u = canonicalize("bbl", r, 1).unwrap();
@@ -2023,10 +2332,20 @@ fn page_composition() -> String {
     )
     .unwrap();
 
-    writeln!(s, "Ruling on nothing is refused, so the union cannot be published unresolved:\n").unwrap();
+    writeln!(
+        s,
+        "Ruling on nothing is refused, so the union cannot be published unresolved:\n"
+    )
+    .unwrap();
     match compose("merged", "2026.07", &sources, &[]) {
         Ok(_) => writeln!(s, "!!! success \"composes\"\n").unwrap(),
-        Err(e) => writeln!(s, "!!! failure \"`{}`\"\n    {}\n", e.code_str(), e.message()).unwrap(),
+        Err(e) => writeln!(
+            s,
+            "!!! failure \"`{}`\"\n    {}\n",
+            e.code_str(),
+            e.message()
+        )
+        .unwrap(),
     }
 
     // ---- 4. the ruling ---------------------------------------------------
@@ -2073,7 +2392,11 @@ fn page_composition() -> String {
     }
 
     // ---- 5. the pin ------------------------------------------------------
-    writeln!(s, "\n## Step 3 — the pin makes the reconciliation checkable\n").unwrap();
+    writeln!(
+        s,
+        "\n## Step 3 — the pin makes the reconciliation checkable\n"
+    )
+    .unwrap();
     writeln!(
         s,
         "The effective registry has no authored file, so its identity is the \
@@ -2100,7 +2423,12 @@ fn page_composition() -> String {
     writeln!(s, "|---|---|").unwrap();
     writeln!(s, "| effective registry | `{}` |", c.pin).unwrap();
     writeln!(s, "| recomposed from the same inputs | `{}` |", again.pin).unwrap();
-    writeln!(s, "| **same units, different reason** | `{}` |", altered.pin).unwrap();
+    writeln!(
+        s,
+        "| **same units, different reason** | `{}` |",
+        altered.pin
+    )
+    .unwrap();
     for (n, v, h) in &c.inputs {
         writeln!(s, "| constituent `{n}@{v}` | `{h}` |").unwrap();
     }
@@ -2110,7 +2438,11 @@ fn page_composition() -> String {
          artifact, changing the justification changes the pin — so a seal over \
          the pin covers the reasoning transitively. Nobody can quietly rewrite \
          why `bbl` means the oil barrel.\n",
-        if c.pin == again.pin { "yes" } else { "NO — this is a bug" }
+        if c.pin == again.pin {
+            "yes"
+        } else {
+            "NO — this is a bug"
+        }
     )
     .unwrap();
 
@@ -2127,7 +2459,11 @@ fn page_composition() -> String {
     let pin = c.metadata_bytes(Embedding::Pin);
     writeln!(s, "| Mode | Metadata per table | Resolves offline | Survives the source registries disappearing |").unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
-    writeln!(s, "| `Full` — embed the effective registry | {full} B | yes | **yes** |").unwrap();
+    writeln!(
+        s,
+        "| `Full` — embed the effective registry | {full} B | yes | **yes** |"
+    )
+    .unwrap();
     writeln!(s, "| `Pin` — embed the hash only | {pin} B | no | no |").unwrap();
     writeln!(
         s,
@@ -2172,7 +2508,11 @@ fn page_composition() -> String {
         blob.len()
     )
     .unwrap();
-    writeln!(s, "| Container | Bundle | Payload alone | Registry cost | Per file |").unwrap();
+    writeln!(
+        s,
+        "| Container | Bundle | Payload alone | Registry cost | Per file |"
+    )
+    .unwrap();
     writeln!(s, "|---|---|---|---|---|").unwrap();
 
     // The same bundle again with 64 KB payloads: copies now sit further apart
@@ -2187,10 +2527,30 @@ fn page_composition() -> String {
     }
 
     let cases: [(&str, &str, &[&str], bool); 4] = [
-        ("solid stream + zstd -19, 8 KB payloads", "zstd", &["-19", "-c", "-q"], false),
-        ("solid stream + gzip -9, 8 KB payloads", "gzip", &["-9", "-c"], false),
-        ("solid stream + gzip -9, **64 KB** payloads", "gzip", &["-9", "-c"], true),
-        ("per-file compression (zip entry, Parquet block)", "", &[], false),
+        (
+            "solid stream + zstd -19, 8 KB payloads",
+            "zstd",
+            &["-19", "-c", "-q"],
+            false,
+        ),
+        (
+            "solid stream + gzip -9, 8 KB payloads",
+            "gzip",
+            &["-9", "-c"],
+            false,
+        ),
+        (
+            "solid stream + gzip -9, **64 KB** payloads",
+            "gzip",
+            &["-9", "-c"],
+            true,
+        ),
+        (
+            "per-file compression (zip entry, Parquet block)",
+            "",
+            &[],
+            false,
+        ),
     ];
     for (label, tool, args, wide) in cases {
         let (bun, pay): (&[u8], &[u8]) = if wide {
@@ -2205,17 +2565,17 @@ fn page_composition() -> String {
             let one = compressed_len("gzip", &["-9", "-c"], &blob);
             let pay_one = compressed_len("gzip", &["-9", "-c"], &pseudo_payload(8 * 1024, 7));
             match (one, pay_one) {
-                (Some(o), Some(_)) => writeln!(
-                    s,
-                    "| {label} | — | — | {} KB | **{o} B** |",
-                    (o * n) / 1024
-                )
-                .unwrap(),
+                (Some(o), Some(_)) => {
+                    writeln!(s, "| {label} | — | — | {} KB | **{o} B** |", (o * n) / 1024).unwrap()
+                }
                 _ => writeln!(s, "| {label} | *tool unavailable* | | | |").unwrap(),
             }
             continue;
         }
-        match (compressed_len(tool, args, bun), compressed_len(tool, args, pay)) {
+        match (
+            compressed_len(tool, args, bun),
+            compressed_len(tool, args, pay),
+        ) {
             (Some(b), Some(p)) => writeln!(
                 s,
                 "| {label} | {} KB | {} KB | {} KB | **{} B** |",
@@ -2269,10 +2629,34 @@ fn page_composition() -> String {
     writeln!(s, "| Incoming table | Pins | Symbols in use | Verdict |").unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
     for (label, foreign, lpin, fpin, syms) in [
-        ("same registry", &oilr, "sha256:aaa", "sha256:aaa", &["bbl", "m"][..]),
-        ("oil 1.4 -> oil 1.5 (adds a unit)", &bump, "sha256:v14", "sha256:v15", &["bbl", "m"][..]),
-        ("water registry", &waterr, "sha256:aaa", "sha256:bbb", &["bbl"][..]),
-        ("water registry, `bbl` unused", &waterr, "sha256:aaa", "sha256:bbb", &["m"][..]),
+        (
+            "same registry",
+            &oilr,
+            "sha256:aaa",
+            "sha256:aaa",
+            &["bbl", "m"][..],
+        ),
+        (
+            "oil 1.4 -> oil 1.5 (adds a unit)",
+            &bump,
+            "sha256:v14",
+            "sha256:v15",
+            &["bbl", "m"][..],
+        ),
+        (
+            "water registry",
+            &waterr,
+            "sha256:aaa",
+            "sha256:bbb",
+            &["bbl"][..],
+        ),
+        (
+            "water registry, `bbl` unused",
+            &waterr,
+            "sha256:aaa",
+            "sha256:bbb",
+            &["m"][..],
+        ),
     ] {
         let v = check_boundary(&oilr, lpin, foreign, fpin, syms);
         let verdict = match v.strict_code() {
@@ -2316,14 +2700,22 @@ fn page_composition() -> String {
     writeln!(s, "## What a consumer actually does\n").unwrap();
     writeln!(s, "| Question | What it takes |").unwrap();
     writeln!(s, "|---|---|").unwrap();
-    writeln!(s, "| What is this column's unit worth? | one lookup in the effective registry |").unwrap();
+    writeln!(
+        s,
+        "| What is this column's unit worth? | one lookup in the effective registry |"
+    )
+    .unwrap();
     writeln!(
         s,
         "| Why does `bbl` mean *that* here? | `[registry.reconciliation.bbl]` — \"{}\" |",
         c.applied.first().map(|a| a.reason.as_str()).unwrap_or("—")
     )
     .unwrap();
-    writeln!(s, "| Am I resolving against the right registry? | `verify_pin(fetched, pin)` |").unwrap();
+    writeln!(
+        s,
+        "| Am I resolving against the right registry? | `verify_pin(fetched, pin)` |"
+    )
+    .unwrap();
     writeln!(s, "| Do I trust the inputs? | fetch `composed_from`, recompose, compare pins, check each seal |").unwrap();
 
     let tampered = c.toml.replace("oil barrel", "oil barrel ");
@@ -2333,8 +2725,16 @@ fn page_composition() -> String {
          a display name is enough:\n\n\
          | Fetched registry | `verify_pin` |\n|---|---|\n\
          | as published | {} |\n| one character changed | {} |\n",
-        if verify_pin(&c.toml, &c.pin) { "✅ matches" } else { "❌" },
-        if verify_pin(&tampered, &c.pin) { "matches" } else { "❌ **rejected**" }
+        if verify_pin(&c.toml, &c.pin) {
+            "✅ matches"
+        } else {
+            "❌"
+        },
+        if verify_pin(&tampered, &c.pin) {
+            "matches"
+        } else {
+            "❌ **rejected**"
+        }
     )
     .unwrap();
 
@@ -2411,8 +2811,18 @@ fn section_findings_cf(registry: &Registry) -> String {
     writeln!(s, "|---|---|").unwrap();
     let (mut ok, mut n) = (0, 0);
     for q in [
-        "W m-2", "K", "kg m-2 s-1", "m s-1", "degree_Celsius", "1", "W m-2 K-1", "m2", "s-1",
-        "J kg-1 K-1", "degC", "MW*h",
+        "W m-2",
+        "K",
+        "kg m-2 s-1",
+        "m s-1",
+        "degree_Celsius",
+        "1",
+        "W m-2 K-1",
+        "m2",
+        "s-1",
+        "J kg-1 K-1",
+        "degC",
+        "MW*h",
     ] {
         n += 1;
         match canonicalize(q, registry, 1) {
@@ -2422,7 +2832,13 @@ fn section_findings_cf(registry: &Registry) -> String {
             }
             Err(e) => {
                 let m = e.message();
-                writeln!(s, "| `{q}` | **`{}`** — {} |", e.code_str(), &m[..m.len().min(52)]).unwrap();
+                writeln!(
+                    s,
+                    "| `{q}` | **`{}`** — {} |",
+                    e.code_str(),
+                    &m[..m.len().min(52)]
+                )
+                .unwrap();
             }
         }
     }
@@ -2457,7 +2873,12 @@ fn section_findings_angle() -> String {
     let hz = canonicalize("Hz", &si, 1).unwrap();
     writeln!(s, "| Under SI's dimensionless radian | Dimension |").unwrap();
     writeln!(s, "|---|---|").unwrap();
-    writeln!(s, "| `rad*s^-1` (angular frequency ω) | {} |", fmt_dim(&rads)).unwrap();
+    writeln!(
+        s,
+        "| `rad*s^-1` (angular frequency ω) | {} |",
+        fmt_dim(&rads)
+    )
+    .unwrap();
     writeln!(s, "| `Hz` (frequency f) | {} |", fmt_dim(&hz)).unwrap();
     writeln!(s, "| commensurable? | **{}** |", commensurable(&rads, &hz)).unwrap();
     if let Ok(c) = conversion("rad*s^-1", "Hz", &si) {
@@ -2513,7 +2934,11 @@ fn section_findings_angle() -> String {
         writeln!(
             s,
             "| `{d}` | {} |",
-            if si_base { "SI base quantity" } else { "**not an SI base quantity**" }
+            if si_base {
+                "SI base quantity"
+            } else {
+                "**not an SI base quantity**"
+            }
         )
         .unwrap();
     }
@@ -2540,7 +2965,12 @@ fn section_findings_angle() -> String {
     writeln!(s, "| stored rational | `{approx}` |").unwrap();
     writeln!(s, "| as `f64` | {:.17} |", approx.to_f64()).unwrap();
     writeln!(s, "| π/180 | {truth:.17} |").unwrap();
-    writeln!(s, "| relative error | {:.3e} |", (approx.to_f64() - truth).abs() / truth).unwrap();
+    writeln!(
+        s,
+        "| relative error | {:.3e} |",
+        (approx.to_f64() - truth).abs() / truth
+    )
+    .unwrap();
     writeln!(
         s,
         "| 180° via that rational | {:.12} |",
@@ -2561,7 +2991,12 @@ fn section_findings_angle() -> String {
     writeln!(s, "| `deg` → `rad` factor | `{}` |", c.factor).unwrap();
     writeln!(s, "| 180° in radians | {:.17} |", c.apply(180.0)).unwrap();
     writeln!(s, "| π | {:.17} |", std::f64::consts::PI).unwrap();
-    writeln!(s, "| **exactly equal?** | **{}** |", c.apply(180.0) == std::f64::consts::PI).unwrap();
+    writeln!(
+        s,
+        "| **exactly equal?** | **{}** |",
+        c.apply(180.0) == std::f64::consts::PI
+    )
+    .unwrap();
     let back = conversion("rad", "deg", &real).unwrap();
     writeln!(s, "| 45° round trip | {} |", back.apply(c.apply(45.0))).unwrap();
     writeln!(
@@ -2575,7 +3010,12 @@ fn section_findings_angle() -> String {
 
 fn section_findings_log() -> String {
     let mut s = String::new();
-    writeln!(s, "### Logarithmic units — {} *(deferred)*\n", amb("AMB-067")).unwrap();
+    writeln!(
+        s,
+        "### Logarithmic units — {} *(deferred)*\n",
+        amb("AMB-067")
+    )
+    .unwrap();
     writeln!(
         s,
         "The bel family — `dBm`, `dBW`, `dBZ`, `dB_SPL` — cannot be expressed by \
@@ -2602,7 +3042,11 @@ fn section_findings_log() -> String {
         writeln!(
             s,
             "| {dbm} dBm | {got:.3} mW | {truth:.3} mW | {} |",
-            if (got - truth).abs() < 1e-9 { "ok" } else { "**WRONG**" }
+            if (got - truth).abs() < 1e-9 {
+                "ok"
+            } else {
+                "**WRONG**"
+            }
         )
         .unwrap();
     }
@@ -2654,17 +3098,72 @@ fn page_findings(root: &Path, registry: &Registry) -> String {
     writeln!(s, "| Finding | Entry | Status | Evidence |").unwrap();
     writeln!(s, "|---|---|---|---|").unwrap();
     for (what, amb_id, status, ev) in [
-        ("Composing two registries has no story", "AMB-058", "open", "[live](../composition/)"),
-        ("Combining across registry pins is silently wrong", "AMB-059", "**resolved**", "[live](../composition/#reading-a-table-someone-else-tagged)"),
-        ("A multi-registry table has no describable provenance", "AMB-060", "ruled", "[live](../composition/#step-4-how-much-of-it-travels)"),
-        ("A composition can collide where no constituent did", "AMB-061", "open", "[live](../composition/#step-1-ask-what-must-be-decided)"),
-        ("Engines strip tags: DuckDB, pandas, polars", "AMB-062", "deferred", "recorded, below"),
-        ("CF/UDUNITS strings do not parse", "AMB-063", "open", "live, below"),
-        ("The pint handoff is nearly free", "AMB-064", "open", "recorded, below"),
-        ("UCUM defines no canonical form; licence blocks reuse", "AMB-065", "**resolved**", "recorded, below"),
-        ("Angle units unrepresentable under exact rationals", "AMB-066", "**resolved**", "live, below"),
-        ("Naming a log unit makes it silently convertible", "AMB-067", "deferred", "live, below"),
-        ("`ft` = foot or femto-tonne", "AMB-054", "ruled", "[live](../ambiguity/)"),
+        (
+            "Composing two registries has no story",
+            "AMB-058",
+            "open",
+            "[live](../composition/)",
+        ),
+        (
+            "Combining across registry pins is silently wrong",
+            "AMB-059",
+            "**resolved**",
+            "[live](../composition/#reading-a-table-someone-else-tagged)",
+        ),
+        (
+            "A multi-registry table has no describable provenance",
+            "AMB-060",
+            "ruled",
+            "[live](../composition/#step-4-how-much-of-it-travels)",
+        ),
+        (
+            "A composition can collide where no constituent did",
+            "AMB-061",
+            "open",
+            "[live](../composition/#step-1-ask-what-must-be-decided)",
+        ),
+        (
+            "Engines strip tags: DuckDB, pandas, polars",
+            "AMB-062",
+            "deferred",
+            "recorded, below",
+        ),
+        (
+            "CF/UDUNITS strings do not parse",
+            "AMB-063",
+            "open",
+            "live, below",
+        ),
+        (
+            "The pint handoff is nearly free",
+            "AMB-064",
+            "open",
+            "recorded, below",
+        ),
+        (
+            "UCUM defines no canonical form; licence blocks reuse",
+            "AMB-065",
+            "**resolved**",
+            "recorded, below",
+        ),
+        (
+            "Angle units unrepresentable under exact rationals",
+            "AMB-066",
+            "**resolved**",
+            "live, below",
+        ),
+        (
+            "Naming a log unit makes it silently convertible",
+            "AMB-067",
+            "deferred",
+            "live, below",
+        ),
+        (
+            "`ft` = foot or femto-tonne",
+            "AMB-054",
+            "ruled",
+            "[live](../ambiguity/)",
+        ),
     ] {
         writeln!(s, "| {what} | {} | {status} | {ev} |", amb(amb_id)).unwrap();
     }
@@ -2702,9 +3201,21 @@ fn page_findings(root: &Path, registry: &Registry) -> String {
         ("DuckDB `register()` → `SELECT *`", "**lost**", "**lost**"),
         ("DuckDB `CREATE TABLE AS SELECT`", "**lost**", "**lost**"),
         ("DuckDB `read_parquet()`", "**lost**", "**lost**"),
-        ("DuckDB `COPY TO … (FORMAT PARQUET)`", "**not written**", "**not written**"),
-        ("pandas `read_parquet` → `to_parquet`", "**lost**", "**lost** (replaced by its own `pandas` key)"),
-        ("polars `read_parquet` → `write_parquet`", "**lost**", "**lost**"),
+        (
+            "DuckDB `COPY TO … (FORMAT PARQUET)`",
+            "**not written**",
+            "**not written**",
+        ),
+        (
+            "pandas `read_parquet` → `to_parquet`",
+            "**lost**",
+            "**lost** (replaced by its own `pandas` key)",
+        ),
+        (
+            "polars `read_parquet` → `write_parquet`",
+            "**lost**",
+            "**lost**",
+        ),
     ] {
         writeln!(s, "| {hop} | {f} | {sm} |").unwrap();
     }
@@ -2763,14 +3274,26 @@ fn page_findings(root: &Path, registry: &Registry) -> String {
          no propagation. Each one's gap is the other's contribution.\n"
     )
     .unwrap();
-    writeln!(s, "\n**The layout is column-level**, so the pairing survives scale:\n").unwrap();
+    writeln!(
+        s,
+        "\n**The layout is column-level**, so the pairing survives scale:\n"
+    )
+    .unwrap();
     writeln!(s, "| | Memory (1M float64) | `MW → kW` rescale |").unwrap();
     writeln!(s, "|---|---|---|").unwrap();
     for (what, mem, speed) in [
         ("plain `float64` Series", "8.0 B/value", "0.15 ms"),
-        ("pint-pandas `PintArray` (unit on the dtype)", "9.0 B/value", "35.8 ms"),
+        (
+            "pint-pandas `PintArray` (unit on the dtype)",
+            "9.0 B/value",
+            "35.8 ms",
+        ),
         ("bare pint `Quantity(ndarray)`", "8.0 B/value", "0.16 ms"),
-        ("object column of `Quantity`", "≥56 B/value", "~34 **seconds**"),
+        (
+            "object column of `Quantity`",
+            "≥56 B/value",
+            "~34 **seconds**",
+        ),
     ] {
         writeln!(s, "| {what} | {mem} | {speed} |").unwrap();
     }
@@ -2793,7 +3316,13 @@ fn page_findings(root: &Path, registry: &Registry) -> String {
     )
     .unwrap();
 
-    writeln!(s, "### UCUM and UDUNITS — {}, {}\n", amb("AMB-065"), amb("AMB-063")).unwrap();
+    writeln!(
+        s,
+        "### UCUM and UDUNITS — {}, {}\n",
+        amb("AMB-065"),
+        amb("AMB-063")
+    )
+    .unwrap();
     writeln!(
         s,
         "*Verified 2026-07-31 against ucum.org and the ucum-org/ucum and \
@@ -2836,9 +3365,18 @@ fn page_findings(root: &Path, registry: &Registry) -> String {
         ("linear (scale only) — importable as-is", "267"),
         ("affine (`@` offset) — §6.4 handles", "2"),
         ("logarithmic (`lg(re …)`) — excluded, AMB-067", "8"),
-        ("numeric literals exceeding i128 as exact rationals", "**0**"),
-        ("non-ASCII spellings with an ASCII name already upstream", "12 of 13"),
-        ("commits to `lib/*.xml`, 2015–2026", "9 (43 of 52 were 2007–2014)"),
+        (
+            "numeric literals exceeding i128 as exact rationals",
+            "**0**",
+        ),
+        (
+            "non-ASCII spellings with an ASCII name already upstream",
+            "12 of 13",
+        ),
+        (
+            "commits to `lib/*.xml`, 2015–2026",
+            "9 (43 of 52 were 2007–2014)",
+        ),
     ] {
         writeln!(s, "| {k} | {v} |").unwrap();
     }
@@ -2908,7 +3446,10 @@ fn page_register(root: &Path) -> String {
 
     for line in src.lines() {
         if let Some(rest) = line.strip_prefix("### AMB-") {
-            if let Some(id) = rest.get(..3).filter(|n| n.chars().all(|c| c.is_ascii_digit())) {
+            if let Some(id) = rest
+                .get(..3)
+                .filter(|n| n.chars().all(|c| c.is_ascii_digit()))
+            {
                 anchored += 1;
                 out.push_str(line);
                 out.push_str(&format!(" {{ #amb-{id} }}\n"));
@@ -2922,7 +3463,10 @@ fn page_register(root: &Path) -> String {
     // Sibling-file links resolve in the repository, not on the site.
     let out = out
         .replace("[DECISIONS.md](DECISIONS.md)", "`conformance/DECISIONS.md`")
-        .replace("[AMBIGUITIES.md](AMBIGUITIES.md)", "`conformance/AMBIGUITIES.md`")
+        .replace(
+            "[AMBIGUITIES.md](AMBIGUITIES.md)",
+            "`conformance/AMBIGUITIES.md`",
+        )
         .replace("[README.md](README.md)", "`conformance/README.md`");
 
     // Worked examples, run from the fixture cases each entry cites. An entry
@@ -2944,9 +3488,9 @@ fn page_register(root: &Path) -> String {
          {}\n---\n\n{}",
         coverage_note(&out),
         // The register's own H1 would collide with the one above.
-        out.strip_prefix("# Spec ambiguity register\n").unwrap_or(&out)
-    )
-    + &format!("\n<!-- {anchored} entries anchored -->\n")
+        out.strip_prefix("# Spec ambiguity register\n")
+            .unwrap_or(&out)
+    ) + &format!("\n<!-- {anchored} entries anchored -->\n")
 }
 
 /// For each register entry that cites conformance cases, append a worked
@@ -2961,7 +3505,9 @@ fn inject_worked_examples(root: &Path, register: &str) -> String {
     let fixtures = root.join("conformance/fixtures");
     let mut stack = vec![fixtures];
     while let Some(dir) = stack.pop() {
-        let Ok(rd) = std::fs::read_dir(&dir) else { continue };
+        let Ok(rd) = std::fs::read_dir(&dir) else {
+            continue;
+        };
         for e in rd.filter_map(|e| e.ok()) {
             let path = e.path();
             if path.is_dir() {
@@ -2971,16 +3517,30 @@ fn inject_worked_examples(root: &Path, register: &str) -> String {
             if path.extension().is_none_or(|x| x != "json") {
                 continue;
             }
-            let Ok(text) = std::fs::read_to_string(&path) else { continue };
-            let Ok(doc) = json_lite::parse(&text) else { continue };
-            let Some(list) = doc.get("cases").and_then(Json::as_array) else { continue };
+            let Ok(text) = std::fs::read_to_string(&path) else {
+                continue;
+            };
+            let Ok(doc) = json_lite::parse(&text) else {
+                continue;
+            };
+            let Some(list) = doc.get("cases").and_then(Json::as_array) else {
+                continue;
+            };
             for c in list {
-                let Some(id) = c.get("id").and_then(Json::as_str) else { continue };
+                let Some(id) = c.get("id").and_then(Json::as_str) else {
+                    continue;
+                };
                 let input = c
                     .get("input")
                     .and_then(|i| i.get("unit"))
                     .and_then(Json::as_str)
-                    .map(|u| if u.is_empty() { "(empty string)".to_string() } else { format!("`{u}`") })
+                    .map(|u| {
+                        if u.is_empty() {
+                            "(empty string)".to_string()
+                        } else {
+                            format!("`{u}`")
+                        }
+                    })
                     .or_else(|| {
                         c.get("input")
                             .and_then(|i| i.get("unit_json"))
@@ -3002,7 +3562,11 @@ fn inject_worked_examples(root: &Path, register: &str) -> String {
                         .unwrap_or_else(|| "error".to_string()),
                 };
                 let status = c.get("status").and_then(Json::as_str).unwrap_or("");
-                let note = if status == "provisional" { " *(provisional)*" } else { "" };
+                let note = if status == "provisional" {
+                    " *(provisional)*"
+                } else {
+                    ""
+                };
                 cases.insert(id.to_string(), (input, format!("{outcome}{note}")));
             }
         }
@@ -3067,8 +3631,13 @@ fn coverage_note(register: &str) -> String {
 
     let mut current: Option<String> = None;
     let mut body = String::new();
-    let flush = |id: &Option<String>, body: &str, total: &mut usize, with_example: &mut usize,
-                     decided: &mut usize, decided_with_text: &mut usize, bare: &mut Vec<String>| {
+    let flush = |id: &Option<String>,
+                 body: &str,
+                 total: &mut usize,
+                 with_example: &mut usize,
+                 decided: &mut usize,
+                 decided_with_text: &mut usize,
+                 bare: &mut Vec<String>| {
         let Some(id) = id else { return };
         *total += 1;
         let has_example = body.contains("```")
@@ -3091,8 +3660,15 @@ fn coverage_note(register: &str) -> String {
 
     for line in register.lines() {
         if line.starts_with("### AMB-") {
-            flush(&current, &body, &mut total, &mut with_example, &mut decided,
-                  &mut decided_with_text, &mut bare);
+            flush(
+                &current,
+                &body,
+                &mut total,
+                &mut with_example,
+                &mut decided,
+                &mut decided_with_text,
+                &mut bare,
+            );
             current = line.get(4..11).map(str::to_string);
             body.clear();
         } else {
@@ -3100,8 +3676,15 @@ fn coverage_note(register: &str) -> String {
             body.push('\n');
         }
     }
-    flush(&current, &body, &mut total, &mut with_example, &mut decided,
-          &mut decided_with_text, &mut bare);
+    flush(
+        &current,
+        &body,
+        &mut total,
+        &mut with_example,
+        &mut decided,
+        &mut decided_with_text,
+        &mut bare,
+    );
 
     let mut s = String::new();
     let _ = writeln!(
@@ -3130,8 +3713,12 @@ fn section_refused() -> String {
     writeln!(s, "## Spellings that are refused on purpose\n").unwrap();
 
     let path = repo_root().join("registries/power-systems.toml");
-    let Ok(src) = std::fs::read_to_string(&path) else { return s };
-    let Ok(r) = Registry::from_toml(&src) else { return s };
+    let Ok(src) = std::fs::read_to_string(&path) else {
+        return s;
+    };
+    let Ok(r) = Registry::from_toml(&src) else {
+        return s;
+    };
     let declared = r.ambiguities();
     if declared.is_empty() {
         return s;
@@ -3159,7 +3746,11 @@ fn section_refused() -> String {
             if a.use_instead.is_empty() {
                 "—".to_string()
             } else {
-                a.use_instead.iter().map(|u| format!("`{u}`")).collect::<Vec<_>>().join(", ")
+                a.use_instead
+                    .iter()
+                    .map(|u| format!("`{u}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
             }
         )
         .unwrap();
