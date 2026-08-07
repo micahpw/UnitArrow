@@ -9,8 +9,6 @@
 //! against the raw token, because a JSON parser decodes escapes before the unit
 //! string exists — so a reader that only sees decoded values cannot enforce it.
 
-
-
 use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::{String, ToString};
@@ -22,7 +20,10 @@ pub enum Json {
     Bool(bool),
     Number(f64),
     /// Decoded value plus the raw source token (including quotes).
-    Str { value: String, raw: String },
+    Str {
+        value: String,
+        raw: String,
+    },
     Array(Vec<Json>),
     Object(BTreeMap<String, Json>),
 }
@@ -229,7 +230,9 @@ fn parse_number(b: &[u8], src: &str, i: &mut usize) -> Result<Json, String> {
     if b.get(*i) == Some(&b'-') {
         *i += 1;
     }
-    while *i < b.len() && (b[*i].is_ascii_digit() || matches!(b[*i], b'.' | b'e' | b'E' | b'+' | b'-')) {
+    while *i < b.len()
+        && (b[*i].is_ascii_digit() || matches!(b[*i], b'.' | b'e' | b'E' | b'+' | b'-'))
+    {
         *i += 1;
     }
     src[start..*i]

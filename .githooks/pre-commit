@@ -1,0 +1,59 @@
+#!/bin/sh
+# UnitArrow pre-commit checks.
+#
+# Enable once per clone:
+#     git config core.hooksPath .githooks
+#
+# Skip a single commit with `git commit --no-verify` — for a work-in-progress
+# commit on a branch, that is a reasonable thing to do.
+#
+# Only the fast checks live here. `cargo test` and the Python suite belong to
+# CI: a hook that takes ten seconds gets disabled, and a disabled hook catches
+# nothing. Everything below runs in well under two seconds on a warm cache.
+
+set -e
+
+fail() {
+    printf '\n\033[31mpre-commit: %s\033[0m\n' "$1" >&2
+    printf 'Fix it, or commit with --no-verify to skip.\n\n' >&2
+    exit 1
+}
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -n "$staged" ] || exit 0
+
+has() { printf '%s\n' "$staged" | grep -qE "$1"; }
+
+# 1. Compiled artifacts are never source, and this runs before any early exit
+#    because it is the check most likely to fire on a commit that touches
+#    nothing else. `maturin develop` writes the extension module into
+#    python/src/ for editable installs, where it sits waiting for an unwary
+#    `git add -A`.
+if has '\.(so|pyd|dylib|wasm)$'; then
+    fail "a compiled artifact is staged: $(printf '%s\n' "$staged" | grep -E '\.(so|pyd|dylib|wasm)$' | tr '\n' ' ')"
+fi
+
+# 2. Formatting. Blocking in CI as of the formatting pass, so catching it here
+#    saves a round trip rather than duplicating a check.
+if has '\.rs$'; then
+    cargo fmt --all --check >/dev/null 2>&1 \
+        || fail "cargo fmt --all --check failed. Run: cargo fmt --all"
+fi
+
+# 3. The repository invariants, whenever Rust or a tracked document changes.
+#    Fast, and they guard the class of mistake that has actually happened twice
+#    here: a register tally that drifted to 60 while there were 67 entries, and
+#    17 status lines reading `open` over recorded rulings. Both were silent
+#    until a test looked.
+if has '\.(rs|md|json|toml)$'; then
+    cargo test -q --test repo_invariants >/dev/null 2>&1 \
+        || fail "repository invariants failed. Run: cargo test --test repo_invariants"
+fi
+
+# 4. Lints, blocking in CI at -D warnings.
+if has '\.rs$'; then
+    cargo clippy --workspace --all-targets -- -D warnings >/dev/null 2>&1 \
+        || fail "cargo clippy failed. Run: cargo clippy --workspace --all-targets -- -D warnings"
+fi
+
+exit 0

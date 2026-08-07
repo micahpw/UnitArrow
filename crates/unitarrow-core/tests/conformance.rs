@@ -16,15 +16,21 @@ use unitarrow_core::json_lite::{self, Json};
 use unitarrow_core::{canonicalize, check_unit_token, Dimension, Registry};
 
 fn repo_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().unwrap()
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap()
 }
 
 fn load_registry(name: &str) -> Registry {
     // Fixture envelopes name their registry as `<name>@<version>`.
     let file = name.split('@').next().unwrap();
-    let path = repo_root().join("conformance/registry").join(format!("{file}.toml"));
+    let path = repo_root()
+        .join("conformance/registry")
+        .join(format!("{file}.toml"));
     let src = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    Registry::from_toml(&src).unwrap_or_else(|e| panic!("{} is not a valid registry: {e}", path.display()))
+    Registry::from_toml(&src)
+        .unwrap_or_else(|e| panic!("{} is not a valid registry: {e}", path.display()))
 }
 
 struct Outcome {
@@ -46,7 +52,11 @@ fn run_case(case: &Json, registry: &Registry) -> Outcome {
             let raw = tok.as_str().expect("unit_json is a string");
             check_unit_token(raw).map(str::to_string)
         }
-        None => Ok(input.get("unit").and_then(Json::as_str).expect("unit").to_string()),
+        None => Ok(input
+            .get("unit")
+            .and_then(Json::as_str)
+            .expect("unit")
+            .to_string()),
     };
 
     let result = decoded.and_then(|s| canonicalize(&s, registry, grammar));
@@ -55,7 +65,10 @@ fn run_case(case: &Json, registry: &Registry) -> Outcome {
         ("error", Err(e)) => {
             let want = expect.get("code").and_then(Json::as_str).unwrap();
             if e.code_str() == want {
-                Outcome { ok: true, detail: e.code_str().to_string() }
+                Outcome {
+                    ok: true,
+                    detail: e.code_str().to_string(),
+                }
             } else {
                 Outcome {
                     ok: false,
@@ -71,13 +84,20 @@ fn run_case(case: &Json, registry: &Registry) -> Outcome {
                 u.canonical
             ),
         },
-        ("ok", Err(e)) => Outcome { ok: false, detail: format!("expected success, got {e}") },
+        ("ok", Err(e)) => Outcome {
+            ok: false,
+            detail: format!("expected success, got {e}"),
+        },
         ("ok", Ok(u)) => {
             let want_canonical = expect.get("canonical").and_then(Json::as_str).unwrap();
             let want_dim: BTreeMap<String, i64> = expect
                 .get("dimension")
                 .and_then(Json::as_object)
-                .map(|o| o.iter().filter_map(|(k, v)| v.as_i64().map(|n| (k.clone(), n))).collect())
+                .map(|o| {
+                    o.iter()
+                        .filter_map(|(k, v)| v.as_i64().map(|n| (k.clone(), n)))
+                        .collect()
+                })
                 .unwrap_or_default();
             let got_dim: BTreeMap<String, i64> = u
                 .dimension
@@ -88,18 +108,30 @@ fn run_case(case: &Json, registry: &Registry) -> Outcome {
 
             let mut problems = Vec::new();
             if u.canonical != want_canonical {
-                problems.push(format!("canonical: expected {want_canonical:?}, got {:?}", u.canonical));
+                problems.push(format!(
+                    "canonical: expected {want_canonical:?}, got {:?}",
+                    u.canonical
+                ));
             }
             if got_dim != want_dim {
                 problems.push(format!("dimension: expected {want_dim:?}, got {got_dim:?}"));
             }
             if problems.is_empty() {
-                Outcome { ok: true, detail: u.canonical.clone() }
+                Outcome {
+                    ok: true,
+                    detail: u.canonical.clone(),
+                }
             } else {
-                Outcome { ok: false, detail: problems.join("; ") }
+                Outcome {
+                    ok: false,
+                    detail: problems.join("; "),
+                }
             }
         }
-        (other, _) => Outcome { ok: false, detail: format!("unknown expected outcome {other:?}") },
+        (other, _) => Outcome {
+            ok: false,
+            detail: format!("unknown expected outcome {other:?}"),
+        },
     }
 }
 
@@ -130,7 +162,10 @@ fn run_all() -> Tally {
     for path in files {
         let src = std::fs::read_to_string(&path).unwrap();
         let doc = json_lite::parse(&src).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-        let registry_name = doc.get("registry").and_then(Json::as_str).expect("envelope names a registry");
+        let registry_name = doc
+            .get("registry")
+            .and_then(Json::as_str)
+            .expect("envelope names a registry");
         let registry = load_registry(registry_name);
 
         for case in doc.get("cases").and_then(Json::as_array).expect("cases") {
@@ -163,7 +198,11 @@ fn normative_cases_all_pass() {
             t.normative_fail.join("\n  ")
         );
     }
-    assert!(t.normative_pass >= 60, "expected the full normative set, got {}", t.normative_pass);
+    assert!(
+        t.normative_pass >= 60,
+        "expected the full normative set, got {}",
+        t.normative_pass
+    );
     println!("{}/{} normative cases pass", t.normative_pass, total);
 }
 
@@ -208,9 +247,8 @@ fn canonical_form_is_idempotent_across_the_suite() {
                 continue;
             }
             let canonical = expect.get("canonical").and_then(Json::as_str).unwrap();
-            let again = canonicalize(canonical, &registry, 1).unwrap_or_else(|e| {
-                panic!("canonical form {canonical:?} does not re-parse: {e}")
-            });
+            let again = canonicalize(canonical, &registry, 1)
+                .unwrap_or_else(|e| panic!("canonical form {canonical:?} does not re-parse: {e}"));
             assert_eq!(
                 again.canonical, canonical,
                 "canon({canonical:?}) = {:?} — not idempotent",
@@ -219,7 +257,10 @@ fn canonical_form_is_idempotent_across_the_suite() {
             checked += 1;
         }
     }
-    assert!(checked > 40, "expected to check most of the suite, got {checked}");
+    assert!(
+        checked > 40,
+        "expected to check most of the suite, got {checked}"
+    );
     println!("{checked} canonical strings are idempotent");
 }
 
@@ -235,7 +276,11 @@ fn fixtures_only_assert_base_dimensions() {
         }
         let doc = json_lite::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
         for case in doc.get("cases").and_then(Json::as_array).unwrap() {
-            if let Some(d) = case.get("expect").and_then(|e| e.get("dimension")).and_then(Json::as_object) {
+            if let Some(d) = case
+                .get("expect")
+                .and_then(|e| e.get("dimension"))
+                .and_then(Json::as_object)
+            {
                 for key in d.keys() {
                     assert!(
                         Dimension::index_of(key).is_some(),

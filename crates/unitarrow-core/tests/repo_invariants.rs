@@ -22,7 +22,10 @@ use unitarrow_core::json_lite::{self, Json};
 use unitarrow_core::toml_lite;
 
 fn root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().unwrap()
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap()
 }
 
 fn register() -> String {
@@ -89,7 +92,10 @@ fn register_ids_are_contiguous_from_001() {
             i + 1
         );
     }
-    assert!(ids.len() >= 68, "entries should never be removed, only resolved");
+    assert!(
+        ids.len() >= 68,
+        "entries should never be removed, only resolved"
+    );
 }
 
 /// The tally in the summary must match the document it summarises.
@@ -121,8 +127,15 @@ fn register_summary_matches_the_document() {
         .and_then(|s| s.parse().ok())
         .expect("the summary states a decided count");
 
-    assert_eq!(stated_entries, all.len(), "summary entry count is stale: {line}");
-    assert_eq!(stated_decided, decided, "summary decided count is stale: {line}");
+    assert_eq!(
+        stated_entries,
+        all.len(),
+        "summary entry count is stale: {line}"
+    );
+    assert_eq!(
+        stated_decided, decided,
+        "summary decided count is stale: {line}"
+    );
 }
 
 /// An entry that records a ruling must not still advertise itself as open.
@@ -143,7 +156,11 @@ fn no_entry_reads_open_while_recording_a_ruling() {
             bad.push(format!("{id}: {}", status.trim()));
         }
     }
-    assert!(bad.is_empty(), "status lines contradict their bodies:\n  {}", bad.join("\n  "));
+    assert!(
+        bad.is_empty(),
+        "status lines contradict their bodies:\n  {}",
+        bad.join("\n  ")
+    );
 }
 
 /// Every `blocked_on` must name an entry that exists.
@@ -159,10 +176,15 @@ fn every_blocked_on_names_a_real_register_entry() {
         let doc = json_lite::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
         for case in doc.get("cases").and_then(Json::as_array).unwrap() {
             let id = case.get("id").and_then(Json::as_str).unwrap();
-            let Some(bs) = case.get("blocked_on").and_then(Json::as_array) else { continue };
+            let Some(bs) = case.get("blocked_on").and_then(Json::as_array) else {
+                continue;
+            };
             for b in bs.iter().filter_map(Json::as_str) {
                 checked += 1;
-                assert!(known.contains(b), "{id} is blocked on {b}, which is not in the register");
+                assert!(
+                    known.contains(b),
+                    "{id} is blocked on {b}, which is not in the register"
+                );
             }
         }
     }
@@ -180,11 +202,18 @@ fn fixture_case_ids_are_unique_and_well_formed() {
         for case in doc.get("cases").and_then(Json::as_array).unwrap() {
             let id = case.get("id").and_then(Json::as_str).unwrap().to_string();
             if let Some(prev) = seen.get(&id) {
-                panic!("duplicate case id {id} in {} and {}", prev.display(), path.display());
+                panic!(
+                    "duplicate case id {id} in {} and {}",
+                    prev.display(),
+                    path.display()
+                );
             }
             let parts: Vec<&str> = id.split('.').collect();
             assert_eq!(parts.len(), 3, "{id} must be <category>.<theme>.<nnn>");
-            assert_eq!(parts[0], category, "{id} does not match its file's category");
+            assert_eq!(
+                parts[0], category,
+                "{id} does not match its file's category"
+            );
             assert!(
                 parts[2].len() == 3 && parts[2].chars().all(|c| c.is_ascii_digit()),
                 "{id} must end in three digits"
@@ -192,7 +221,11 @@ fn fixture_case_ids_are_unique_and_well_formed() {
             seen.insert(id, path.clone());
         }
     }
-    assert!(seen.len() >= 100, "the suite should not shrink; found {}", seen.len());
+    assert!(
+        seen.len() >= 100,
+        "the suite should not shrink; found {}",
+        seen.len()
+    );
 }
 
 /// Every entry must demonstrate its problem concretely.
@@ -236,7 +269,10 @@ fn every_register_entry_demonstrates_its_problem() {
 #[test]
 fn every_spec_toml_block_parses() {
     let mut total = 0;
-    for doc in ["docs/unitarrow-spec.md", "docs/provenance-companion-spec.md"] {
+    for doc in [
+        "docs/unitarrow-spec.md",
+        "docs/provenance-companion-spec.md",
+    ] {
         let src = std::fs::read_to_string(root().join(doc)).unwrap();
         let mut rest = src.as_str();
         while let Some(start) = rest.find("```toml\n") {
@@ -249,7 +285,10 @@ fn every_spec_toml_block_parses() {
             rest = &after[end..];
         }
     }
-    assert!(total >= 4, "expected the spec to carry TOML examples; found {total}");
+    assert!(
+        total >= 4,
+        "expected the spec to carry TOML examples; found {total}"
+    );
     println!("{total} spec TOML blocks parse");
 }
 
@@ -298,10 +337,22 @@ fn the_conformance_registry_loads_and_is_the_one_fixtures_name() {
     let r = unitarrow_core::Registry::from_toml(&src).expect("the fixture registry must load");
     for path in fixture_files() {
         let doc = json_lite::parse(&std::fs::read_to_string(&path).unwrap()).unwrap();
-        let Some(named) = doc.get("registry").and_then(Json::as_str) else { continue };
+        let Some(named) = doc.get("registry").and_then(Json::as_str) else {
+            continue;
+        };
         let (name, version) = named.split_once('@').expect("registry is <name>@<version>");
-        assert_eq!(name, r.name, "{} names a different registry", path.display());
-        assert_eq!(version, r.version, "{} pins a different registry version", path.display());
+        assert_eq!(
+            name,
+            r.name,
+            "{} names a different registry",
+            path.display()
+        );
+        assert_eq!(
+            version,
+            r.version,
+            "{} pins a different registry version",
+            path.display()
+        );
     }
 }
 
@@ -337,7 +388,10 @@ fn the_power_systems_registry_loads_and_converts_correctly() {
     assert!(
         r.collision_risks().is_empty(),
         "unresolved prefix collisions: {:?}",
-        r.collision_risks().iter().map(|c| &c.symbol).collect::<Vec<_>>()
+        r.collision_risks()
+            .iter()
+            .map(|c| &c.symbol)
+            .collect::<Vec<_>>()
     );
 
     // The factors a power-systems deployment actually depends on.
@@ -377,8 +431,8 @@ fn the_power_systems_registry_loads_and_converts_correctly() {
 
     // The compound quantities this registry exists to express.
     for q in [
-        "USD/MWh", "Btu/kWh", "t/MWh", "kg/MWh", "ohm/km", "MW/min", "MWh/yr",
-        "MVA", "MVAr", "MVAR", "Mvar", "kvar", "MMBtu", "uF", "mH", "mS",
+        "USD/MWh", "Btu/kWh", "t/MWh", "kg/MWh", "ohm/km", "MW/min", "MWh/yr", "MVA", "MVAr",
+        "MVAR", "Mvar", "kvar", "MMBtu", "uF", "mH", "mS",
     ] {
         assert!(canonicalize(q, &r, 1).is_ok(), "{q} should resolve");
     }
@@ -399,7 +453,10 @@ fn the_power_systems_registry_loads_and_converts_correctly() {
         .units()
         .filter(|un| un.dimension_name == "currency")
         .count();
-    assert_eq!(currencies, 1, "more than one currency invents an exchange rate");
+    assert_eq!(
+        currencies, 1,
+        "more than one currency invents an exchange rate"
+    );
 
     // Mass is authored as `g` because the SI base unit already carries a
     // prefix; `kg` must derive to exactly 1.

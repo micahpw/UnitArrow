@@ -45,7 +45,11 @@ pub struct Source {
 
 impl Source {
     pub fn new(name: &str, version: &str, toml: &str) -> Source {
-        Source { name: name.into(), version: version.into(), toml: toml.into() }
+        Source {
+            name: name.into(),
+            version: version.into(),
+            toml: toml.into(),
+        }
     }
 
     /// The pin §5.6 records for this constituent.
@@ -68,7 +72,11 @@ pub struct Resolution {
 
 impl Resolution {
     pub fn new(symbol: &str, from: &str, reason: &str) -> Resolution {
-        Resolution { symbol: symbol.into(), from: from.into(), reason: reason.into() }
+        Resolution {
+            symbol: symbol.into(),
+            from: from.into(),
+            reason: reason.into(),
+        }
     }
 }
 
@@ -189,10 +197,7 @@ fn json_str(s: &str) -> String {
             '\t' => out.push_str("\\t"),
             c if (c as u32) < 0x20 => {
                 let mut buf = String::new();
-                let _ = core::fmt::Write::write_fmt(
-                    &mut buf,
-                    format_args!("\\u{:04x}", c as u32),
-                );
+                let _ = core::fmt::Write::write_fmt(&mut buf, format_args!("\\u{:04x}", c as u32));
                 out.push_str(&buf);
             }
             c => out.push(c),
@@ -523,7 +528,10 @@ mod tests {
         let e = compose("merged", "1", &[oil(), water()], &[]).unwrap_err();
         let m = e.message();
         assert!(m.contains("\"bbl\""), "{m}");
-        assert!(m.contains("oil") && m.contains("water"), "both sources named: {m}");
+        assert!(
+            m.contains("oil") && m.contains("water"),
+            "both sources named: {m}"
+        );
         assert!(m.contains("say why"), "the reason is asked for: {m}");
     }
 
@@ -534,7 +542,10 @@ mod tests {
         let found = contested(&[oil(), water()]).unwrap();
         assert_eq!(found.len(), 1, "only bbl is contested: {found:?}");
         assert_eq!(found[0].symbol, "bbl");
-        assert_eq!(found[0].sources, vec!["oil".to_string(), "water".to_string()]);
+        assert_eq!(
+            found[0].sources,
+            vec!["oil".to_string(), "water".to_string()]
+        );
     }
 
     #[test]
@@ -543,7 +554,11 @@ mod tests {
             "merged",
             "1",
             &[oil(), water()],
-            &[Resolution::new("bbl", "oil", "this deployment is upstream oil, not water")],
+            &[Resolution::new(
+                "bbl",
+                "oil",
+                "this deployment is upstream oil, not water",
+            )],
         )
         .unwrap();
 
@@ -561,7 +576,13 @@ mod tests {
     #[test]
     fn the_pin_is_reproducible_and_covers_the_reason() {
         let ruling = |why: &str| {
-            compose("merged", "1", &[oil(), water()], &[Resolution::new("bbl", "oil", why)]).unwrap()
+            compose(
+                "merged",
+                "1",
+                &[oil(), water()],
+                &[Resolution::new("bbl", "oil", why)],
+            )
+            .unwrap()
         };
         let a = ruling("this deployment is upstream oil");
         let b = ruling("this deployment is upstream oil");
@@ -588,8 +609,16 @@ mod tests {
         .unwrap();
         // A consumer reading only the embedded artifact can answer all three
         // questions from AMB-060 without fetching anything.
-        assert!(c.toml.contains("[registry.composed_from.oil]"), "{}", c.toml);
-        assert!(c.toml.contains("[registry.reconciliation.bbl]"), "{}", c.toml);
+        assert!(
+            c.toml.contains("[registry.composed_from.oil]"),
+            "{}",
+            c.toml
+        );
+        assert!(
+            c.toml.contains("[registry.reconciliation.bbl]"),
+            "{}",
+            c.toml
+        );
         assert!(c.toml.contains("upstream oil"), "{}", c.toml);
     }
 
@@ -605,7 +634,11 @@ mod tests {
             ],
         )
         .unwrap_err();
-        assert!(stale.message().contains("settles nothing"), "{}", stale.message());
+        assert!(
+            stale.message().contains("settles nothing"),
+            "{}",
+            stale.message()
+        );
 
         let unknown = compose(
             "merged",
@@ -614,12 +647,24 @@ mod tests {
             &[Resolution::new("bbl", "gas", "not a source")],
         )
         .unwrap_err();
-        assert!(unknown.message().contains("not being composed"), "{}", unknown.message());
+        assert!(
+            unknown.message().contains("not being composed"),
+            "{}",
+            unknown.message()
+        );
 
-        let blank =
-            compose("merged", "1", &[oil(), water()], &[Resolution::new("bbl", "oil", "  ")])
-                .unwrap_err();
-        assert!(blank.message().contains("empty reason"), "{}", blank.message());
+        let blank = compose(
+            "merged",
+            "1",
+            &[oil(), water()],
+            &[Resolution::new("bbl", "oil", "  ")],
+        )
+        .unwrap_err();
+        assert!(
+            blank.message().contains("empty reason"),
+            "{}",
+            blank.message()
+        );
     }
 
     #[test]
@@ -635,17 +680,29 @@ mod tests {
         // Integrity is identical: both modes carry the pin, so a substituted
         // registry is caught either way. This is what a bare URL cannot do.
         for mode in [Embedding::Full, Embedding::Pin] {
-            assert!(c.provenance_json(mode).contains(&c.pin), "{mode:?} carries the pin");
+            assert!(
+                c.provenance_json(mode).contains(&c.pin),
+                "{mode:?} carries the pin"
+            );
         }
         assert!(verify_pin(&c.toml, &c.pin));
-        assert!(!verify_pin(&format!("{}\n", c.toml), &c.pin), "drift is detected");
+        assert!(
+            !verify_pin(&format!("{}\n", c.toml), &c.pin),
+            "drift is detected"
+        );
 
         // Availability differs, and that is the whole trade. Only Full carries
         // the bytes, so only Full still resolves when the constituents are gone.
         let full = c.provenance_json(Embedding::Full);
         let pin_only = c.provenance_json(Embedding::Pin);
-        assert!(full.contains("\\\"oil barrel\\\""), "the definitions travel");
-        assert!(!pin_only.contains("oil barrel"), "the pin mode carries none of them");
+        assert!(
+            full.contains("\\\"oil barrel\\\""),
+            "the definitions travel"
+        );
+        assert!(
+            !pin_only.contains("oil barrel"),
+            "the pin mode carries none of them"
+        );
         assert!(
             c.metadata_bytes(Embedding::Full) > c.metadata_bytes(Embedding::Pin),
             "and that is what it costs"
@@ -653,12 +710,21 @@ mod tests {
 
         // Full mode is self-contained: the embedded source reloads on its own.
         let embedded = crate::json_lite::parse(&full).unwrap();
-        let src = embedded.get("registry").unwrap().get("source").unwrap().as_str().unwrap();
+        let src = embedded
+            .get("registry")
+            .unwrap()
+            .get("source")
+            .unwrap()
+            .as_str()
+            .unwrap();
         assert_eq!(
             Registry::from_toml(src).unwrap().describe("bbl").as_deref(),
             Some("oil barrel")
         );
-        assert!(verify_pin(src, &c.pin), "and it verifies against its own pin");
+        assert!(
+            verify_pin(src, &c.pin),
+            "and it verifies against its own pin"
+        );
     }
 
     #[test]

@@ -41,8 +41,9 @@ pub struct Dialect {
 
 impl Dialect {
     pub const SQL: Dialect = Dialect { pi: "pi()" };
-    pub const LITERAL_PI: Dialect =
-        Dialect { pi: "3.141592653589793115997963468544185161590576171875" };
+    pub const LITERAL_PI: Dialect = Dialect {
+        pi: "3.141592653589793115997963468544185161590576171875",
+    };
 }
 
 impl Default for Dialect {
@@ -65,7 +66,10 @@ pub struct Fragment {
 /// A bare column reference, carrying whatever unit it is tagged with.
 pub fn column(name: &str, unit: &str, registry: &Registry) -> Result<Fragment> {
     let u = canonicalize(unit, registry, 1)?;
-    Ok(Fragment { sql: name.to_string(), unit: u.canonical })
+    Ok(Fragment {
+        sql: name.to_string(),
+        unit: u.canonical,
+    })
 }
 
 /// Convert a fragment to another unit, emitting the scaling arithmetic.
@@ -105,18 +109,31 @@ pub fn convert(f: &Fragment, to: &str, registry: &Registry, d: Dialect) -> Resul
             format!("({sql} + {on}.0 / {od})")
         };
     }
-    Ok(Fragment { sql, unit: target.canonical })
+    Ok(Fragment {
+        sql,
+        unit: target.canonical,
+    })
 }
 
 fn rebuild(terms: &[(String, i32)], registry: &Registry) -> Result<CanonicalUnit> {
     let live: alloc::vec::Vec<String> = terms
         .iter()
         .filter(|(_, e)| *e != 0)
-        .map(|(s, e)| if *e == 1 { s.clone() } else { format!("{s}^{e}") })
+        .map(|(s, e)| {
+            if *e == 1 {
+                s.clone()
+            } else {
+                format!("{s}^{e}")
+            }
+        })
         .collect();
     // Handed back to the one code path that produces canonical form (§6.3);
     // never assembled here.
-    let expr = if live.is_empty() { "1".to_string() } else { live.join("*") };
+    let expr = if live.is_empty() {
+        "1".to_string()
+    } else {
+        live.join("*")
+    };
     canonicalize(&expr, registry, 1)
 }
 
@@ -138,13 +155,19 @@ fn combine(a: &Fragment, b: &Fragment, sign: i32, registry: &Registry) -> Result
 /// `a * b` — dimensions add, and the result unit is the canonicalized product.
 pub fn mul(a: &Fragment, b: &Fragment, registry: &Registry) -> Result<Fragment> {
     let unit = combine(a, b, 1, registry)?;
-    Ok(Fragment { sql: format!("({} * {})", a.sql, b.sql), unit: unit.canonical })
+    Ok(Fragment {
+        sql: format!("({} * {})", a.sql, b.sql),
+        unit: unit.canonical,
+    })
 }
 
 /// `a / b` — dimensions subtract.
 pub fn div(a: &Fragment, b: &Fragment, registry: &Registry) -> Result<Fragment> {
     let unit = combine(a, b, -1, registry)?;
-    Ok(Fragment { sql: format!("({} / {})", a.sql, b.sql), unit: unit.canonical })
+    Ok(Fragment {
+        sql: format!("({} / {})", a.sql, b.sql),
+        unit: unit.canonical,
+    })
 }
 
 /// `a + b` (or `-`), per §8.1: the dimensions must match, the right operand is
@@ -160,13 +183,7 @@ pub fn sub(a: &Fragment, b: &Fragment, registry: &Registry, d: Dialect) -> Resul
     sum(a, b, "-", registry, d)
 }
 
-fn sum(
-    a: &Fragment,
-    b: &Fragment,
-    op: &str,
-    registry: &Registry,
-    d: Dialect,
-) -> Result<Fragment> {
+fn sum(a: &Fragment, b: &Fragment, op: &str, registry: &Registry, d: Dialect) -> Result<Fragment> {
     let (ua, ub) = (
         canonicalize(&a.unit, registry, 1)?,
         canonicalize(&b.unit, registry, 1)?,
@@ -185,7 +202,10 @@ fn sum(
     } else {
         convert(b, &a.unit, registry, d)?
     };
-    Ok(Fragment { sql: format!("({} {op} {})", a.sql, rhs.sql), unit: ua.canonical })
+    Ok(Fragment {
+        sql: format!("({} {op} {})", a.sql, rhs.sql),
+        unit: ua.canonical,
+    })
 }
 
 #[cfg(test)]
@@ -245,7 +265,11 @@ mod tests {
         // The case an emitter that assumes scaling gets silently wrong.
         let f = convert(&col("t_c", "degC", &r), "K", &r, Dialect::SQL).unwrap();
         assert!(f.sql.contains("5463"), "{}", f.sql);
-        assert!(f.sql.contains('+'), "an offset must be added, not multiplied: {}", f.sql);
+        assert!(
+            f.sql.contains('+'),
+            "an offset must be added, not multiplied: {}",
+            f.sql
+        );
     }
 
     #[test]

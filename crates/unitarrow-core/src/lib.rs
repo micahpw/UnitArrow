@@ -118,7 +118,12 @@ pub fn check_unit_token(raw: &str) -> Result<&str> {
         .strip_prefix('"')
         .and_then(|s| s.strip_suffix('"'))
         .filter(|_| raw.len() >= 2)
-        .ok_or_else(|| Error::new(ErrorCode::BadMetadata, "the `unit` value must be a JSON string"))?;
+        .ok_or_else(|| {
+            Error::new(
+                ErrorCode::BadMetadata,
+                "the `unit` value must be a JSON string",
+            )
+        })?;
     if let Some(pos) = inner.find('\\') {
         return Err(Error::at(
             ErrorCode::BadMetadata,
@@ -152,6 +157,9 @@ mod tests {
 
     #[test]
     fn a_non_string_unit_value_is_bad_metadata() {
-        assert_eq!(check_unit_token("7").unwrap_err().code(), ErrorCode::BadMetadata);
+        assert_eq!(
+            check_unit_token("7").unwrap_err().code(),
+            ErrorCode::BadMetadata
+        );
     }
 }

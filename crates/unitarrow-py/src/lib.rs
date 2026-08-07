@@ -36,7 +36,9 @@ impl Registry {
     /// Load from TOML source.
     #[staticmethod]
     fn from_toml(source: &str) -> PyResult<Registry> {
-        CoreRegistry::from_toml(source).map(|inner| Registry { inner }).map_err(err)
+        CoreRegistry::from_toml(source)
+            .map(|inner| Registry { inner })
+            .map_err(err)
     }
 
     /// Load from a path.
@@ -75,13 +77,19 @@ impl Registry {
     /// when their canonical strings match. Never compare a raw string from the
     /// wire.
     fn canonicalize(&self, unit: &str) -> PyResult<String> {
-        canonicalize(unit, &self.inner, 1).map(|u| u.canonical).map_err(err)
+        canonicalize(unit, &self.inner, 1)
+            .map(|u| u.canonical)
+            .map_err(err)
     }
 
     /// The sparse dimension vector, as a dict over the ten base dimensions.
     fn dimension(&self, unit: &str) -> PyResult<std::collections::BTreeMap<String, i32>> {
         let u = canonicalize(unit, &self.inner, 1).map_err(err)?;
-        Ok(u.dimension.sparse().into_iter().map(|(k, v)| (k.to_string(), v as i32)).collect())
+        Ok(u.dimension
+            .sparse()
+            .into_iter()
+            .map(|(k, v)| (k.to_string(), v as i32))
+            .collect())
     }
 
     /// Read a symbol back as words — `MW` is *megawatt*.
@@ -139,7 +147,10 @@ impl Registry {
     /// A bare column reference carrying a unit — the leaf of an expression.
     fn col(&self, name: &str, unit: &str) -> PyResult<Fragment> {
         unitarrow_core::expr::column(name, unit, &self.inner)
-            .map(|f| Fragment { sql: f.sql, unit: f.unit })
+            .map(|f| Fragment {
+                sql: f.sql,
+                unit: f.unit,
+            })
             .map_err(err)
     }
 
@@ -235,11 +246,17 @@ pub struct Fragment {
 }
 
 fn core_frag(f: &Fragment) -> unitarrow_core::Fragment {
-    unitarrow_core::Fragment { sql: f.sql.clone(), unit: f.unit.clone() }
+    unitarrow_core::Fragment {
+        sql: f.sql.clone(),
+        unit: f.unit.clone(),
+    }
 }
 
 fn wrap(f: unitarrow_core::Fragment) -> Fragment {
-    Fragment { sql: f.sql, unit: f.unit }
+    Fragment {
+        sql: f.sql,
+        unit: f.unit,
+    }
 }
 
 #[pymethods]

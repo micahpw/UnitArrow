@@ -60,7 +60,10 @@ mod bump {
 
     impl Bump {
         pub const fn new() -> Bump {
-            Bump { arena: UnsafeCell::new([0; ARENA]), next: UnsafeCell::new(0) }
+            Bump {
+                arena: UnsafeCell::new([0; ARENA]),
+                next: UnsafeCell::new(0),
+            }
         }
     }
 
@@ -226,7 +229,9 @@ pub unsafe extern "C" fn ua_canonicalize(ptr: *const u8, len: usize) -> u64 {
                 r#"{{"ok":false,"code":"{}","message":"{}","offset":{}}}"#,
                 e.code_str(),
                 escape(e.message()),
-                e.offset().map(|o| o.to_string()).unwrap_or_else(|| "null".into())
+                e.offset()
+                    .map(|o| o.to_string())
+                    .unwrap_or_else(|| "null".into())
             )),
         }
     }
@@ -278,7 +283,11 @@ pub unsafe extern "C" fn ua_suggest(ptr: *const u8, len: usize) -> u64 {
         return reply("[]".to_string());
     };
     {
-        let items: Vec<String> = r.suggest(input).iter().map(|s| format!(r#""{}""#, escape(s))).collect();
+        let items: Vec<String> = r
+            .suggest(input)
+            .iter()
+            .map(|s| format!(r#""{}""#, escape(s)))
+            .collect();
         reply(format!("[{}]", items.join(",")))
     }
 }

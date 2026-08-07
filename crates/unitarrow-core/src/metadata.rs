@@ -124,10 +124,17 @@ impl Metadata {
         }
         if let Some(t) = &self.temporal {
             s.push_str(",\"temporal\":{");
-            let parts: Vec<String> = [("kind", &t.kind), ("statistic", &t.statistic), ("period", &t.period)]
-                .iter()
-                .filter_map(|(k, v)| v.as_ref().map(|v| format!("{}:{}", json_string(k), json_string(v))))
-                .collect();
+            let parts: Vec<String> = [
+                ("kind", &t.kind),
+                ("statistic", &t.statistic),
+                ("period", &t.period),
+            ]
+            .iter()
+            .filter_map(|(k, v)| {
+                v.as_ref()
+                    .map(|v| format!("{}:{}", json_string(k), json_string(v)))
+            })
+            .collect();
             s.push_str(&parts.join(","));
             s.push('}');
         }
@@ -153,7 +160,9 @@ impl Metadata {
             .as_object()
             .ok_or_else(|| bad("extension metadata must be a JSON object"))?;
 
-        let unit_v = obj.get("unit").ok_or_else(|| bad("`unit` is required (§5.2)"))?;
+        let unit_v = obj
+            .get("unit")
+            .ok_or_else(|| bad("`unit` is required (§5.2)"))?;
         let raw = unit_v
             .raw_token()
             .ok_or_else(|| bad("the `unit` value must be a JSON string"))?;
@@ -175,12 +184,17 @@ impl Metadata {
             ));
         }
 
-        let quantity = obj.get("quantity").and_then(Json::as_str).map(str::to_string);
+        let quantity = obj
+            .get("quantity")
+            .and_then(Json::as_str)
+            .map(str::to_string);
 
         let base = match obj.get("base") {
             None => None,
             Some(b) => {
-                let t = b.as_object().ok_or_else(|| bad("`base` must be an object (§5.4)"))?;
+                let t = b
+                    .as_object()
+                    .ok_or_else(|| bad("`base` must be an object (§5.4)"))?;
                 // `base.unit` is unit-valued, so the same escape rule applies.
                 let unit = match t.get("unit") {
                     None => None,
@@ -201,7 +215,11 @@ impl Metadata {
 
         let temporal = obj.get("temporal").map(|t| {
             let get = |k: &str| t.get(k).and_then(Json::as_str).map(str::to_string);
-            Temporal { kind: get("kind"), statistic: get("statistic"), period: get("period") }
+            Temporal {
+                kind: get("kind"),
+                statistic: get("statistic"),
+                period: get("period"),
+            }
         });
 
         const KNOWN: [&str; 5] = ["unit", "grammar", "quantity", "base", "temporal"];
@@ -213,7 +231,14 @@ impl Metadata {
             unknown.insert(k.clone(), raw_of(v));
         }
 
-        Ok(Metadata { unit, grammar: grammar as u32, quantity, base, temporal, unknown })
+        Ok(Metadata {
+            unit,
+            grammar: grammar as u32,
+            quantity,
+            base,
+            temporal,
+            unknown,
+        })
     }
 }
 
@@ -229,8 +254,10 @@ fn raw_of(v: &Json) -> String {
             format!("[{}]", inner.join(","))
         }
         Json::Object(map) => {
-            let inner: Vec<String> =
-                map.iter().map(|(k, v)| format!("{}:{}", json_string(k), raw_of(v))).collect();
+            let inner: Vec<String> = map
+                .iter()
+                .map(|(k, v)| format!("{}:{}", json_string(k), raw_of(v)))
+                .collect();
             format!("{{{}}}", inner.join(","))
         }
     }
@@ -255,8 +282,7 @@ fn json_string(s: &str) -> String {
             '\t' => out.push_str("\\t"),
             c if (c as u32) < 0x20 => {
                 let mut buf = String::new();
-                let _ =
-                    core::fmt::Write::write_fmt(&mut buf, format_args!("\\u{:04x}", c as u32));
+                let _ = core::fmt::Write::write_fmt(&mut buf, format_args!("\\u{:04x}", c as u32));
                 out.push_str(&buf);
             }
             c => out.push(c),
@@ -297,7 +323,10 @@ mod tests {
         // understood changes a digest and breaks a seal.
         let src = r#"{"unit":"MW","grammar":1,"vendorX:calib":"2026-03-01"}"#;
         let m = Metadata::from_json(src).unwrap();
-        assert_eq!(m.unknown.get("vendorX:calib").map(String::as_str), Some(r#""2026-03-01""#));
+        assert_eq!(
+            m.unknown.get("vendorX:calib").map(String::as_str),
+            Some(r#""2026-03-01""#)
+        );
         assert_eq!(m.to_json(), src);
     }
 

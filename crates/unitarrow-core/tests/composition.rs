@@ -14,7 +14,10 @@ use unitarrow_core::compose::{compose, verify_pin, Embedding, Resolution, Source
 use unitarrow_core::json_lite::{self, Json};
 
 fn repo_root() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..").canonicalize().unwrap()
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .canonicalize()
+        .unwrap()
 }
 
 fn sources_of(input: &Json, key: &str) -> Vec<Source> {
@@ -26,7 +29,9 @@ fn sources_of(input: &Json, key: &str) -> Vec<Source> {
         .map(|s| {
             Source::new(
                 s.get("name").and_then(Json::as_str).expect("source.name"),
-                s.get("version").and_then(Json::as_str).expect("source.version"),
+                s.get("version")
+                    .and_then(Json::as_str)
+                    .expect("source.version"),
                 s.get("toml").and_then(Json::as_str).expect("source.toml"),
             )
         })
@@ -39,10 +44,16 @@ struct Outcome {
 }
 
 fn pass() -> Outcome {
-    Outcome { ok: true, detail: "ok".into() }
+    Outcome {
+        ok: true,
+        detail: "ok".into(),
+    }
 }
 fn fail(d: impl Into<String>) -> Outcome {
-    Outcome { ok: false, detail: d.into() }
+    Outcome {
+        ok: false,
+        detail: d.into(),
+    }
 }
 
 fn run_case(case: &Json) -> Outcome {
@@ -73,11 +84,19 @@ fn run_case(case: &Json) -> Outcome {
                 .expect("side loads")
         };
         let lpin = input.get("local_pin").and_then(Json::as_str).unwrap_or("");
-        let fpin = input.get("foreign_pin").and_then(Json::as_str).unwrap_or("");
+        let fpin = input
+            .get("foreign_pin")
+            .and_then(Json::as_str)
+            .unwrap_or("");
         let syms: Vec<String> = input
             .get("symbols")
             .and_then(Json::as_array)
-            .map(|a| a.iter().filter_map(Json::as_str).map(str::to_string).collect())
+            .map(|a| {
+                a.iter()
+                    .filter_map(Json::as_str)
+                    .map(str::to_string)
+                    .collect()
+            })
             .unwrap_or_default();
         let refs: Vec<&str> = syms.iter().map(String::as_str).collect();
 
@@ -91,7 +110,10 @@ fn run_case(case: &Json) -> Outcome {
         let wants_error = expect.get("outcome").and_then(Json::as_str) == Some("error");
         if wants_error {
             let Some(code) = verdict.strict_code() else {
-                return fail(format!("expected an error, boundary was {}", verdict.message()));
+                return fail(format!(
+                    "expected an error, boundary was {}",
+                    verdict.message()
+                ));
             };
             if code.as_str() != expect.get("code").and_then(Json::as_str).unwrap_or("") {
                 return fail(format!(
@@ -149,7 +171,9 @@ fn run_case(case: &Json) -> Outcome {
         return if wants_error != accepted {
             pass()
         } else {
-            fail(format!("verify {kind:?}: accepted={accepted}, expected_error={wants_error}"))
+            fail(format!(
+                "verify {kind:?}: accepted={accepted}, expected_error={wants_error}"
+            ))
         };
     }
     let want = expect.get("outcome").and_then(Json::as_str).unwrap_or("");
@@ -177,7 +201,11 @@ fn run_case(case: &Json) -> Outcome {
             }
             pass()
         }
-        ("ok", Err(e)) => fail(format!("expected success, got {}: {}", e.code_str(), e.message())),
+        ("ok", Err(e)) => fail(format!(
+            "expected success, got {}: {}",
+            e.code_str(),
+            e.message()
+        )),
         ("ok", Ok(c)) => {
             if let Some(p) = expect.get("pin").and_then(Json::as_str) {
                 if c.pin != p {
@@ -185,13 +213,25 @@ fn run_case(case: &Json) -> Outcome {
                 }
             }
             for (key, actual) in [
-                ("applied", c.applied.iter().map(|a| a.symbol.clone()).collect::<Vec<_>>()),
+                (
+                    "applied",
+                    c.applied
+                        .iter()
+                        .map(|a| a.symbol.clone())
+                        .collect::<Vec<_>>(),
+                ),
                 ("agreed", c.agreed.clone()),
-                ("composed_from", c.inputs.iter().map(|(n, _, _)| n.clone()).collect()),
+                (
+                    "composed_from",
+                    c.inputs.iter().map(|(n, _, _)| n.clone()).collect(),
+                ),
             ] {
                 if let Some(want) = expect.get(key).and_then(Json::as_array) {
-                    let want: Vec<String> =
-                        want.iter().filter_map(Json::as_str).map(str::to_string).collect();
+                    let want: Vec<String> = want
+                        .iter()
+                        .filter_map(Json::as_str)
+                        .map(str::to_string)
+                        .collect();
                     if want != actual {
                         return fail(format!("{key}: expected {want:?}, got {actual:?}"));
                     }
@@ -200,7 +240,9 @@ fn run_case(case: &Json) -> Outcome {
             if let Some(resolves) = expect.get("resolves").and_then(Json::as_object) {
                 let r = match c.registry() {
                     Ok(r) => r,
-                    Err(e) => return fail(format!("effective registry does not load: {}", e.message())),
+                    Err(e) => {
+                        return fail(format!("effective registry does not load: {}", e.message()))
+                    }
                 };
                 for (symbol, want) in resolves {
                     let got = r.resolve(symbol);
@@ -220,7 +262,10 @@ fn run_case(case: &Json) -> Outcome {
                     };
                     if let Some(d) = want.get("dimension_name").and_then(Json::as_str) {
                         if u.dimension_name != d {
-                            return fail(format!("{symbol}: dimension {} != {d}", u.dimension_name));
+                            return fail(format!(
+                                "{symbol}: dimension {} != {d}",
+                                u.dimension_name
+                            ));
                         }
                     }
                     if let Some(f) = want.get("factor").and_then(Json::as_array) {
@@ -228,7 +273,8 @@ fn run_case(case: &Json) -> Outcome {
                             f[0].as_i64().unwrap() as i128,
                             f[1].as_i64().unwrap() as i128,
                         );
-                        if (u.factor.ratio().numerator(), u.factor.ratio().denominator()) != (n, d) {
+                        if (u.factor.ratio().numerator(), u.factor.ratio().denominator()) != (n, d)
+                        {
                             return fail(format!("{symbol}: factor {} != {n}/{d}", u.factor));
                         }
                     }
@@ -282,7 +328,13 @@ fn run_all() -> (usize, Vec<String>, usize, Vec<String>) {
 #[test]
 fn normative_composition_cases_all_pass() {
     let (np, nf, _, _) = run_all();
-    assert!(nf.is_empty(), "{}/{} failed:\n  {}", nf.len(), np + nf.len(), nf.join("\n  "));
+    assert!(
+        nf.is_empty(),
+        "{}/{} failed:\n  {}",
+        nf.len(),
+        np + nf.len(),
+        nf.join("\n  ")
+    );
     assert!(np >= 15, "expected real coverage, got {np}");
     println!("{np} normative composition cases pass");
 }
@@ -296,7 +348,10 @@ fn normative_composition_cases_all_pass() {
 #[test]
 fn provisional_cases_are_accounted_for() {
     let (np, _, pp, pf) = run_all();
-    println!("{np} normative, {pp} provisional passing, {} provisional failing", pf.len());
+    println!(
+        "{np} normative, {pp} provisional passing, {} provisional failing",
+        pf.len()
+    );
     assert_eq!(pp + pf.len(), 0, "unexpected provisional cases: {pf:?}");
 }
 
@@ -305,10 +360,12 @@ fn provisional_cases_are_accounted_for() {
 /// an untracked one.
 #[test]
 fn fixture_references_resolve() {
-    let register =
-        std::fs::read_to_string(repo_root().join("conformance/AMBIGUITIES.md")).unwrap();
+    let register = std::fs::read_to_string(repo_root().join("conformance/AMBIGUITIES.md")).unwrap();
     let dir = repo_root().join("conformance/fixtures/composition");
-    for path in std::fs::read_dir(&dir).unwrap().filter_map(|e| e.ok().map(|e| e.path())) {
+    for path in std::fs::read_dir(&dir)
+        .unwrap()
+        .filter_map(|e| e.ok().map(|e| e.path()))
+    {
         if path.extension().is_none_or(|x| x != "json") {
             continue;
         }
@@ -337,10 +394,18 @@ fn embedding_modes_trade_availability_not_integrity() {
     let c = compose("merged", "1", &[Source::new("oil", "1.4", toml)], &[]).unwrap();
 
     for mode in [Embedding::Full, Embedding::Pin] {
-        assert!(c.provenance_json(mode).contains(&c.pin), "{mode:?} carries the hash");
+        assert!(
+            c.provenance_json(mode).contains(&c.pin),
+            "{mode:?} carries the hash"
+        );
     }
-    assert!(c.provenance_json(Embedding::Full).contains("\\\"oil barrel\\\""));
+    assert!(c
+        .provenance_json(Embedding::Full)
+        .contains("\\\"oil barrel\\\""));
     assert!(!c.provenance_json(Embedding::Pin).contains("oil barrel"));
     assert!(verify_pin(&c.toml, &c.pin));
-    assert!(!verify_pin(&c.toml.replace("oil barrel", "oil barrel "), &c.pin));
+    assert!(!verify_pin(
+        &c.toml.replace("oil barrel", "oil barrel "),
+        &c.pin
+    ));
 }

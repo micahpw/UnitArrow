@@ -12,8 +12,6 @@
 //! Canonicalization normalizes *spelling*, never the producer's choice of unit:
 //! `MW*h` and `MWh` are both canonical and are not equal.
 
-
-
 use alloc::collections::BTreeMap;
 use alloc::format;
 use alloc::string::{String, ToString};
@@ -122,8 +120,14 @@ fn from_parsed(parsed: &ParsedUnit, registry: &Registry) -> Result<CanonicalUnit
             let tail = if hints.is_empty() {
                 String::new()
             } else {
-                format!(" — did you mean {}?", 
-                    hints.iter().map(|h| format!("`{h}`")).collect::<Vec<_>>().join(", "))
+                format!(
+                    " — did you mean {}?",
+                    hints
+                        .iter()
+                        .map(|h| format!("`{h}`"))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             };
             Error::at(
                 ErrorCode::UnknownUnit,
@@ -171,7 +175,10 @@ fn from_parsed(parsed: &ParsedUnit, registry: &Registry) -> Result<CanonicalUnit
     for (sym, exp) in resolved {
         let slot = merged.entry(sym).or_insert(0);
         *slot = slot.checked_add(exp).ok_or_else(|| {
-            Error::new(ErrorCode::ExpRange, "exponent overflow while merging repeated symbols")
+            Error::new(
+                ErrorCode::ExpRange,
+                "exponent overflow while merging repeated symbols",
+            )
         })?;
     }
     merged.retain(|_, e| *e != 0);
@@ -190,10 +197,16 @@ fn from_parsed(parsed: &ParsedUnit, registry: &Registry) -> Result<CanonicalUnit
     for (sym, exp) in &merged {
         let u = registry.resolve(sym).expect("resolved above");
         let contribution = u.dimension.checked_pow(*exp).ok_or_else(|| {
-            Error::new(ErrorCode::ExpRange, format!("dimension overflow raising {sym:?} to {exp}"))
+            Error::new(
+                ErrorCode::ExpRange,
+                format!("dimension overflow raising {sym:?} to {exp}"),
+            )
         })?;
         dimension = dimension.checked_mul(&contribution).ok_or_else(|| {
-            Error::new(ErrorCode::ExpRange, "dimension exponent overflow while combining terms")
+            Error::new(
+                ErrorCode::ExpRange,
+                "dimension exponent overflow while combining terms",
+            )
         })?;
     }
 
@@ -210,8 +223,16 @@ fn from_parsed(parsed: &ParsedUnit, registry: &Registry) -> Result<CanonicalUnit
             format!("{sym}^{exp}")
         }
     };
-    let parts: Vec<String> = positives.iter().chain(negatives.iter()).map(render).collect();
-    let canonical = if parts.is_empty() { "1".to_string() } else { parts.join("*") };
+    let parts: Vec<String> = positives
+        .iter()
+        .chain(negatives.iter())
+        .map(render)
+        .collect();
+    let canonical = if parts.is_empty() {
+        "1".to_string()
+    } else {
+        parts.join("*")
+    };
 
     let terms: Vec<(String, i32)> = positives
         .iter()
@@ -219,7 +240,12 @@ fn from_parsed(parsed: &ParsedUnit, registry: &Registry) -> Result<CanonicalUnit
         .map(|(s, e)| ((*s).clone(), **e))
         .collect();
 
-    Ok(CanonicalUnit { canonical, dimension, terms, affine_symbol })
+    Ok(CanonicalUnit {
+        canonical,
+        dimension,
+        terms,
+        affine_symbol,
+    })
 }
 
 /// Two units are equal iff their canonical strings are identical (§6.3). This is
@@ -326,7 +352,14 @@ mod tests {
         let r = reg();
         assert!(canonicalize("degC", &r, 1).is_ok());
         assert!(canonicalize("degC^1", &r, 1).is_ok());
-        for bad in ["degC*h", "degC^2", "degC/degC", "degC*h/h", "degF*delta_degC", "pu*MW"] {
+        for bad in [
+            "degC*h",
+            "degC^2",
+            "degC/degC",
+            "degC*h/h",
+            "degF*delta_degC",
+            "pu*MW",
+        ] {
             let e = canonicalize(bad, &r, 1).unwrap_err();
             assert_eq!(e.code(), ErrorCode::AffineCompound, "for {bad}");
         }
@@ -356,29 +389,51 @@ mod tests {
         let r = reg();
         let e = canonicalize("µW", &r, 1).unwrap_err();
         assert!(e.message().contains("write `u`"), "{}", e.message());
-        assert!(e.message().contains("remains correct for display"), "{}", e.message());
+        assert!(
+            e.message().contains("remains correct for display"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
     fn verbose_names_resolve_through_canonicalize() {
         let r = reg();
         assert_eq!(canonicalize("megawatt", &r, 1).unwrap().canonical, "MW");
-        assert_eq!(canonicalize("megawatt*hour", &r, 1).unwrap().canonical, "MW*h");
-        assert_eq!(canonicalize("kilowatt/hour", &r, 1).unwrap().canonical, "kW*h^-1");
+        assert_eq!(
+            canonicalize("megawatt*hour", &r, 1).unwrap().canonical,
+            "MW*h"
+        );
+        assert_eq!(
+            canonicalize("kilowatt/hour", &r, 1).unwrap().canonical,
+            "kW*h^-1"
+        );
     }
 
     #[test]
     fn unknown_symbols_and_newer_grammars_are_distinguished() {
         let r = reg();
-        assert_eq!(canonicalize("Zorkmid", &r, 1).unwrap_err().code(), ErrorCode::UnknownUnit);
-        assert_eq!(canonicalize("unknown", &r, 1).unwrap_err().code(), ErrorCode::UnknownUnit);
-        assert_eq!(canonicalize("MW", &r, 2).unwrap_err().code(), ErrorCode::GrammarVersion);
+        assert_eq!(
+            canonicalize("Zorkmid", &r, 1).unwrap_err().code(),
+            ErrorCode::UnknownUnit
+        );
+        assert_eq!(
+            canonicalize("unknown", &r, 1).unwrap_err().code(),
+            ErrorCode::UnknownUnit
+        );
+        assert_eq!(
+            canonicalize("MW", &r, 2).unwrap_err().code(),
+            ErrorCode::GrammarVersion
+        );
     }
 
     #[test]
     fn merge_overflow_is_caught_after_merging() {
         let r = reg();
-        assert_eq!(canonicalize("m^100*m^100", &r, 1).unwrap_err().code(), ErrorCode::ExpRange);
+        assert_eq!(
+            canonicalize("m^100*m^100", &r, 1).unwrap_err().code(),
+            ErrorCode::ExpRange
+        );
     }
 
     #[test]
@@ -386,7 +441,10 @@ mod tests {
         let r = reg();
         let mwh = canonicalize("MW*h", &r, 1).unwrap();
         // 1e6 W * 3600 s = 3.6e9 J
-        assert_eq!(mwh.scale(&r).unwrap(), crate::Rational::integer(3_600_000_000).into());
+        assert_eq!(
+            mwh.scale(&r).unwrap(),
+            crate::Rational::integer(3_600_000_000).into()
+        );
         assert!(canonicalize("degC", &r, 1).unwrap().scale(&r).is_none());
     }
 }

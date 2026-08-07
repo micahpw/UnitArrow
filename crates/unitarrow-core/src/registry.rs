@@ -10,8 +10,6 @@
 //! not conformant — so these checks run regardless of seal state, and their
 //! failures are never phrased as trust failures.
 
-
-
 use alloc::borrow::Cow;
 use alloc::collections::BTreeMap;
 use alloc::format;
@@ -93,13 +91,20 @@ pub struct Ambiguity {
 impl Ambiguity {
     /// The refusal, as a user should read it.
     pub fn describe(&self, symbol: &str) -> String {
-        let mut s = format!("{symbol:?} is ambiguous and is refused rather than guessed: {}", self.reason);
+        let mut s = format!(
+            "{symbol:?} is ambiguous and is refused rather than guessed: {}",
+            self.reason
+        );
         match self.use_instead.len() {
             0 => {}
             1 => s.push_str(&format!(" Write `{}` instead.", self.use_instead[0])),
             _ => s.push_str(&format!(
                 " Write one of {} instead.",
-                self.use_instead.iter().map(|u| format!("`{u}`")).collect::<Vec<_>>().join(", ")
+                self.use_instead
+                    .iter()
+                    .map(|u| format!("`{u}`"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
             )),
         }
         if let Some(see) = &self.see {
@@ -223,10 +228,18 @@ impl Registry {
         let name = header
             .get("name")
             .and_then(Value::as_str)
-            .ok_or_else(|| invalid("[registry].name is required — a version without a name identifies nothing"))?
+            .ok_or_else(|| {
+                invalid("[registry].name is required — a version without a name identifies nothing")
+            })?
             .to_string();
-        if name.is_empty() || !name.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-') {
-            return Err(invalid(format!("[registry].name {name:?} must match [a-z0-9-]+")));
+        if name.is_empty()
+            || !name
+                .chars()
+                .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        {
+            return Err(invalid(format!(
+                "[registry].name {name:?} must match [a-z0-9-]+"
+            )));
         }
         let version = header
             .get("version")
@@ -295,10 +308,22 @@ impl Registry {
                 let use_instead = t
                     .get("use")
                     .and_then(Value::as_array)
-                    .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(Value::as_str)
+                            .map(str::to_string)
+                            .collect()
+                    })
                     .unwrap_or_default();
                 let see = t.get("see").and_then(Value::as_str).map(str::to_string);
-                ambiguous.insert(symbol.clone(), Ambiguity { reason, use_instead, see });
+                ambiguous.insert(
+                    symbol.clone(),
+                    Ambiguity {
+                        reason,
+                        use_instead,
+                        see,
+                    },
+                );
             }
         }
 
@@ -315,7 +340,9 @@ impl Registry {
                     .as_table()
                     .and_then(|t| t.get("vector"))
                     .and_then(Value::as_table)
-                    .ok_or_else(|| invalid(format!("[dimension.{dim_name}] needs a `vector` table")))?;
+                    .ok_or_else(|| {
+                        invalid(format!("[dimension.{dim_name}] needs a `vector` table"))
+                    })?;
                 let mut d = Dimension::DIMENSIONLESS;
                 for (base, exp) in vector {
                     let idx = Dimension::index_of(base).ok_or_else(|| {
@@ -370,8 +397,16 @@ impl Registry {
                     // Typo protection: `factr = [1000, 1]` would otherwise load
                     // silently as a unit with no factor.
                     const KNOWN: [&str; 10] = [
-                        "dimension", "factor", "offset", "delta", "aliases", "display",
-                        "prefixes", "provenance", "variants", "pi",
+                        "dimension",
+                        "factor",
+                        "offset",
+                        "delta",
+                        "aliases",
+                        "display",
+                        "prefixes",
+                        "provenance",
+                        "variants",
+                        "pi",
                     ];
                     if !KNOWN.contains(&key.as_str()) {
                         return Err(invalid(format!("[unit.{symbol}] has unknown key {key:?}")));
@@ -396,16 +431,15 @@ impl Registry {
                     )));
                 };
 
-                let (fnum, fden) = t
-                    .get("factor")
-                    .and_then(Value::as_pair)
-                    .ok_or_else(|| {
-                        invalid(format!(
-                            "[unit.{symbol}].factor must be an exact rational [numerator, denominator]"
-                        ))
-                    })?;
+                let (fnum, fden) = t.get("factor").and_then(Value::as_pair).ok_or_else(|| {
+                    invalid(format!(
+                        "[unit.{symbol}].factor must be an exact rational [numerator, denominator]"
+                    ))
+                })?;
                 if fden == 0 {
-                    return Err(invalid(format!("[unit.{symbol}].factor has a zero denominator")));
+                    return Err(invalid(format!(
+                        "[unit.{symbol}].factor has a zero denominator"
+                    )));
                 }
                 if fnum == 0 {
                     return Err(invalid(format!(
@@ -423,20 +457,24 @@ impl Registry {
                          unreduced pairs overflow under exponentiation"
                     )));
                 }
-                let ratio = Rational::new(fnum, fden)
-                    .ok_or_else(|| invalid(format!("[unit.{symbol}].factor is not representable")))?;
+                let ratio = Rational::new(fnum, fden).ok_or_else(|| {
+                    invalid(format!("[unit.{symbol}].factor is not representable"))
+                })?;
                 // An optional integer power of π (§7.2). This is what lets a
                 // degree be *exactly* `(1/180)·π` radians instead of a stored
                 // rounding of an irrational number — see AMB-066.
                 let pi = match t.get("pi") {
                     None => 0,
                     Some(v) => {
-                        let e = v.as_integer().filter(|e| (-8..=8).contains(e)).ok_or_else(|| {
-                            invalid(format!(
+                        let e =
+                            v.as_integer()
+                                .filter(|e| (-8..=8).contains(e))
+                                .ok_or_else(|| {
+                                    invalid(format!(
                                 "[unit.{symbol}].pi must be a small integer exponent of π; \
                                  anything outside -8..=8 is a modelling mistake, not a unit"
                             ))
-                        })?;
+                                })?;
                         e as i32
                     }
                 };
@@ -446,7 +484,9 @@ impl Registry {
                     None => None,
                     Some(v) => {
                         let (onum, oden) = v.as_pair().ok_or_else(|| {
-                            invalid(format!("[unit.{symbol}].offset must be [numerator, denominator]"))
+                            invalid(format!(
+                                "[unit.{symbol}].offset must be [numerator, denominator]"
+                            ))
                         })?;
                         if oden == 0 {
                             return Err(invalid(format!(
@@ -460,9 +500,9 @@ impl Registry {
                 };
 
                 if let Some(list) = t.get("aliases") {
-                    let arr = list
-                        .as_array()
-                        .ok_or_else(|| invalid(format!("[unit.{symbol}].aliases must be an array")))?;
+                    let arr = list.as_array().ok_or_else(|| {
+                        invalid(format!("[unit.{symbol}].aliases must be an array"))
+                    })?;
                     for a in arr {
                         let a = a.as_str().ok_or_else(|| {
                             invalid(format!("[unit.{symbol}].aliases entries must be strings"))
@@ -554,8 +594,16 @@ impl Registry {
                          canonical form would be {derived:?}, which now means something \
                          else), or narrow [unit.{symbol}].prefixes",
                         existing.dimension_name,
-                        if base_long.is_empty() { String::new() } else { format!(" ({base_long})") },
-                        if verbose.is_empty() { "the prefixed reading".to_string() } else { format!("`{verbose}`") }
+                        if base_long.is_empty() {
+                            String::new()
+                        } else {
+                            format!(" ({base_long})")
+                        },
+                        if verbose.is_empty() {
+                            "the prefixed reading".to_string()
+                        } else {
+                            format!("`{verbose}`")
+                        }
                     )));
                 }
                 if let Some(owner) = aliases.get(&derived) {
@@ -573,14 +621,18 @@ impl Registry {
                 // Verify the factor is representable now, so an overflow is a
                 // load-time error rather than a surprise at lookup.
                 let decimal = crate::prefix::decimal_factor(*power).ok_or_else(|| {
-                    invalid(format!("prefix {prefix_sym:?} (10^{power}) is not representable"))
-                })?;
-                base.factor.checked_mul(Scale::rational(decimal)).ok_or_else(|| {
                     invalid(format!(
-                        "expanding [unit.{symbol}] with prefix {prefix_sym:?} (10^{power}) \
-                         overflows exact-rational range; narrow the prefix set for this unit"
+                        "prefix {prefix_sym:?} (10^{power}) is not representable"
                     ))
                 })?;
+                base.factor
+                    .checked_mul(Scale::rational(decimal))
+                    .ok_or_else(|| {
+                        invalid(format!(
+                            "expanding [unit.{symbol}] with prefix {prefix_sym:?} (10^{power}) \
+                         overflows exact-rational range; narrow the prefix set for this unit"
+                        ))
+                    })?;
 
                 claimed.insert(derived, symbol.clone());
             }
@@ -669,7 +721,10 @@ impl Registry {
                     continue; // a non-affine unit is its own delta
                 }
                 let target = units.get(d).ok_or_else(|| {
-                    invalid(format!("[unit.{}].delta points at undefined unit {d:?}", u.symbol))
+                    invalid(format!(
+                        "[unit.{}].delta points at undefined unit {d:?}",
+                        u.symbol
+                    ))
                 })?;
                 if target.dimension != u.dimension {
                     return Err(invalid(format!(
@@ -684,7 +739,9 @@ impl Registry {
                     )));
                 }
                 if target.offset.is_some() {
-                    return Err(invalid(format!("delta unit {d:?} must not carry an offset")));
+                    return Err(invalid(format!(
+                        "delta unit {d:?} must not carry an offset"
+                    )));
                 }
             }
         }
@@ -714,7 +771,12 @@ impl Registry {
                         summable_with: t
                             .get("summable_with")
                             .and_then(Value::as_array)
-                            .map(|a| a.iter().filter_map(Value::as_str).map(str::to_string).collect())
+                            .map(|a| {
+                                a.iter()
+                                    .filter_map(Value::as_str)
+                                    .map(str::to_string)
+                                    .collect()
+                            })
                             .unwrap_or_default(),
                         display_long: t
                             .get("display")
@@ -824,8 +886,7 @@ impl Registry {
                 for (long, prefix_sym, power) in *set {
                     let composed = format!("{long}{base_word}");
                     let matches = lower == composed
-                        || crate::prefix::spelling_variant(&composed)
-                            .is_some_and(|v| lower == v);
+                        || crate::prefix::spelling_variant(&composed).is_some_and(|v| lower == v);
                     if matches {
                         // A shadowed symbol has no escape hatch, and it is worth
                         // being precise about why: the derived unit's *canonical
@@ -914,7 +975,10 @@ impl Registry {
     /// documentation page should render, so the page the error points at is
     /// generated from the same declaration the error is.
     pub fn ambiguities(&self) -> Vec<(&str, &Ambiguity)> {
-        self.ambiguous.iter().map(|(k, v)| (k.as_str(), v)).collect()
+        self.ambiguous
+            .iter()
+            .map(|(k, v)| (k.as_str(), v))
+            .collect()
     }
 
     /// Which measurement conventions this registry actually contains, with a
@@ -1056,7 +1120,9 @@ impl Registry {
         power: i32,
     ) -> Option<Unit> {
         let base = self.units.get(base_symbol)?;
-        let factor = base.factor.checked_mul(Scale::rational(crate::prefix::decimal_factor(power)?))?;
+        let factor = base
+            .factor
+            .checked_mul(Scale::rational(crate::prefix::decimal_factor(power)?))?;
         Some(Unit {
             symbol: format!("{prefix_sym}{base_symbol}"),
             dimension_name: base.dimension_name.clone(),
@@ -1126,7 +1192,11 @@ impl Registry {
         }
         exact.sort_unstable();
         near.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(&b.1)));
-        exact.into_iter().chain(near.into_iter().map(|(_, c)| c)).take(4).collect()
+        exact
+            .into_iter()
+            .chain(near.into_iter().map(|(_, c)| c))
+            .take(4)
+            .collect()
     }
 
     /// Reverse-lookup a **display form** to the unit it belongs to.
@@ -1184,12 +1254,7 @@ impl Registry {
     /// registry with 20 authored units and the full SI set resolves 500 symbols
     /// while storing 20.
     pub fn unit_count(&self) -> usize {
-        self.units.len()
-            + self
-                .prefixable
-                .values()
-                .map(|set| set.len())
-                .sum::<usize>()
+        self.units.len() + self.prefixable.values().map(|set| set.len()).sum::<usize>()
     }
 
     pub fn aliases(&self) -> &BTreeMap<String, String> {
@@ -1231,14 +1296,14 @@ fn edit_distance(a: &str, b: &str) -> usize {
 
 /// The long name of a prefix within a set, for error messages.
 fn prefix_long_of(set: &'static [crate::prefix::Prefix], sym: &str) -> &'static str {
-    set.iter().find(|(_, s, _)| *s == sym).map(|(l, _, _)| *l).unwrap_or("")
+    set.iter()
+        .find(|(_, s, _)| *s == sym)
+        .map(|(l, _, _)| *l)
+        .unwrap_or("")
 }
 
 fn verbose_alias(name: &str) -> Option<String> {
-    let ok = name
-        .chars()
-        .next()
-        .is_some_and(|c| c.is_ascii_alphabetic())
+    let ok = name.chars().next().is_some_and(|c| c.is_ascii_alphabetic())
         && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_');
     ok.then(|| name.to_ascii_lowercase())
 }
@@ -1294,7 +1359,7 @@ fn read_display(v: Option<&Value>) -> DisplayForms {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::{format};
+    use alloc::format;
 
     const MINIMAL: &str = r#"
 [registry]
@@ -1329,7 +1394,8 @@ aliases = ["megawatt"]
 
     #[test]
     fn rejects_missing_name() {
-        let e = Registry::from_toml("[registry]\nschema_version = 1\nversion = \"1\"\n").unwrap_err();
+        let e =
+            Registry::from_toml("[registry]\nschema_version = 1\nversion = \"1\"\n").unwrap_err();
         assert_eq!(e.code(), ErrorCode::RegistryInvalid);
         assert!(e.message().contains("name is required"), "{}", e.message());
     }
@@ -1337,13 +1403,29 @@ aliases = ["megawatt"]
     #[test]
     fn rejects_degenerate_factors() {
         for (bad, hint) in [
-            ("[unit.x]\ndimension = \"power\"\nfactor = [1, 0]\n", "zero denominator"),
-            ("[unit.x]\ndimension = \"power\"\nfactor = [0, 1]\n", "zero scale"),
-            ("[unit.x]\ndimension = \"power\"\nfactor = [-1, 1]\n", "negative scale"),
-            ("[unit.x]\ndimension = \"power\"\nfactor = [1000, 10]\n", "lowest terms"),
+            (
+                "[unit.x]\ndimension = \"power\"\nfactor = [1, 0]\n",
+                "zero denominator",
+            ),
+            (
+                "[unit.x]\ndimension = \"power\"\nfactor = [0, 1]\n",
+                "zero scale",
+            ),
+            (
+                "[unit.x]\ndimension = \"power\"\nfactor = [-1, 1]\n",
+                "negative scale",
+            ),
+            (
+                "[unit.x]\ndimension = \"power\"\nfactor = [1000, 10]\n",
+                "lowest terms",
+            ),
         ] {
             let e = load(bad).unwrap_err();
-            assert!(e.message().contains(hint), "expected {hint:?}, got {}", e.message());
+            assert!(
+                e.message().contains(hint),
+                "expected {hint:?}, got {}",
+                e.message()
+            );
         }
     }
 
@@ -1361,7 +1443,11 @@ aliases = ["megawatt"]
              [unit.\"M*W\"]\ndimension = \"mass\"\nfactor = [1, 1]\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("not a valid symbol"), "{}", e.message());
+        assert!(
+            e.message().contains("not a valid symbol"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
@@ -1375,10 +1461,14 @@ aliases = ["megawatt"]
         // A genuine redefinition silently changes every commensurability check.
         let e = Registry::from_toml(
             "[registry]\nschema_version = 1\nname = \"t\"\nversion = \"1\"\n\
-             [dimension.length]\nvector = { mass = 1 }\n"
+             [dimension.length]\nvector = { mass = 1 }\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("redefines base dimension"), "{}", e.message());
+        assert!(
+            e.message().contains("redefines base dimension"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
@@ -1388,7 +1478,11 @@ aliases = ["megawatt"]
              [dimension.bad]\nvector = { energy = 1 }\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("unknown base dimension"), "{}", e.message());
+        assert!(
+            e.message().contains("unknown base dimension"),
+            "{}",
+            e.message()
+        );
 
         let e = Registry::from_toml(
             "[registry]\nschema_version = 1\nname = \"t\"\nversion = \"1\"\n\
@@ -1400,7 +1494,8 @@ aliases = ["megawatt"]
 
     #[test]
     fn rejects_typo_keys() {
-        let e = load("[unit.y]\ndimension = \"power\"\nfactor = [1, 1]\nfactr = [2, 1]\n").unwrap_err();
+        let e =
+            load("[unit.y]\ndimension = \"power\"\nfactor = [1, 1]\nfactr = [2, 1]\n").unwrap_err();
         assert!(e.message().contains("unknown key"), "{}", e.message());
     }
 
@@ -1413,10 +1508,7 @@ aliases = ["megawatt"]
 
     #[test]
     fn rejects_parent_cycles() {
-        let e = load(
-            "[quantity.a]\nparent = \"b\"\n[quantity.b]\nparent = \"a\"\n",
-        )
-        .unwrap_err();
+        let e = load("[quantity.a]\nparent = \"b\"\n[quantity.b]\nparent = \"a\"\n").unwrap_err();
         assert!(e.message().contains("cycles"), "{}", e.message());
     }
 
@@ -1434,14 +1526,35 @@ aliases = ["megawatt"]
         assert_eq!(r.authored_count(), 1);
         assert_eq!(r.expanded_units().len(), 13);
         // The range reaches the units this project's own domain needs.
-        assert_eq!(r.resolve("PW").unwrap().factor, Rational::integer(1_000_000_000_000_000).into());
-        assert_eq!(r.resolve("kW").unwrap().factor, Rational::integer(1000).into());
-        assert_eq!(r.resolve("MW").unwrap().factor, Rational::integer(1_000_000).into());
-        assert_eq!(r.resolve("TW").unwrap().factor, Rational::integer(1_000_000_000_000).into());
-        assert_eq!(r.resolve("mW").unwrap().factor, Rational::new(1, 1000).unwrap().into());
-        assert_eq!(r.resolve("uW").unwrap().factor, Rational::new(1, 1_000_000).unwrap().into());
+        assert_eq!(
+            r.resolve("PW").unwrap().factor,
+            Rational::integer(1_000_000_000_000_000).into()
+        );
+        assert_eq!(
+            r.resolve("kW").unwrap().factor,
+            Rational::integer(1000).into()
+        );
+        assert_eq!(
+            r.resolve("MW").unwrap().factor,
+            Rational::integer(1_000_000).into()
+        );
+        assert_eq!(
+            r.resolve("TW").unwrap().factor,
+            Rational::integer(1_000_000_000_000).into()
+        );
+        assert_eq!(
+            r.resolve("mW").unwrap().factor,
+            Rational::new(1, 1000).unwrap().into()
+        );
+        assert_eq!(
+            r.resolve("uW").unwrap().factor,
+            Rational::new(1, 1_000_000).unwrap().into()
+        );
         // Long display names compose.
-        assert_eq!(r.resolve("kW").unwrap().display.long.as_deref(), Some("kilowatt"));
+        assert_eq!(
+            r.resolve("kW").unwrap().display.long.as_deref(),
+            Some("kilowatt")
+        );
         // Generated entries know where they came from.
         assert_eq!(r.resolve("GW").unwrap().prefixed_from.as_deref(), Some("W"));
         assert!(r.resolve("W").unwrap().prefixed_from.is_none());
@@ -1496,7 +1609,11 @@ aliases = ["megawatt"]
         )
         .unwrap_err();
         assert!(e.message().contains("overflows"), "{}", e.message());
-        assert!(e.message().contains("narrow the prefix set"), "{}", e.message());
+        assert!(
+            e.message().contains("narrow the prefix set"),
+            "{}",
+            e.message()
+        );
 
         // ...and the engineering subset keeps the same unit comfortably inside range.
         assert!(Registry::from_toml(
@@ -1516,7 +1633,11 @@ aliases = ["megawatt"]
              offset = [27315, 100]\nprefixes = \"si-engineering\"\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("affine and cannot take prefixes"), "{}", e.message());
+        assert!(
+            e.message().contains("affine and cannot take prefixes"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
@@ -1526,7 +1647,11 @@ aliases = ["megawatt"]
              [unit.m]\ndimension = \"length\"\nfactor = [1, 1]\nprefixes = \"imperial\"\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("not a known prefix set"), "{}", e.message());
+        assert!(
+            e.message().contains("not a known prefix set"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
@@ -1549,7 +1674,11 @@ aliases = ["megawatt"]
             ("terawatt", "TW"),
             ("milliwatt", "mW"),
         ] {
-            assert_eq!(r.canonical_symbol(verbose).as_deref(), Some(symbol), "for {verbose}");
+            assert_eq!(
+                r.canonical_symbol(verbose).as_deref(),
+                Some(symbol),
+                "for {verbose}"
+            );
         }
 
         // Reverse: confirm a tag means what you think it means. This is the
@@ -1596,7 +1725,11 @@ aliases = ["megawatt"]
              [unit.b]\ndimension = \"mass\"\nfactor = [2, 1]\ndisplay = { long = \"gram\" }\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("verbose input would be ambiguous"), "{}", e.message());
+        assert!(
+            e.message().contains("verbose input would be ambiguous"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
@@ -1609,10 +1742,15 @@ aliases = ["megawatt"]
         )
         .unwrap();
         // No spelling is invented for a name that is not a legal symbol.
-        assert!(r.canonical_symbol("British thermal unit (IT).as_deref()").is_none());
+        assert!(r
+            .canonical_symbol("British thermal unit (IT).as_deref()")
+            .is_none());
         assert!(r.aliases().is_empty());
         // The reverse direction still works, which is what it is for.
-        assert_eq!(r.describe("Btu").as_deref(), Some("British thermal unit (IT)"));
+        assert_eq!(
+            r.describe("Btu").as_deref(),
+            Some("British thermal unit (IT)")
+        );
     }
 
     #[test]
@@ -1624,11 +1762,20 @@ aliases = ["megawatt"]
         )
         .unwrap();
         for (input, symbol) in [
-            ("metre", "m"), ("meter", "m"), ("metres", "m"), ("meters", "m"),
-            ("kilometre", "km"), ("kilometer", "km"),
-            ("nanometre", "nm"), ("nanometer", "nm"),
+            ("metre", "m"),
+            ("meter", "m"),
+            ("metres", "m"),
+            ("meters", "m"),
+            ("kilometre", "km"),
+            ("kilometer", "km"),
+            ("nanometre", "nm"),
+            ("nanometer", "nm"),
         ] {
-            assert_eq!(r.canonical_symbol(input).as_deref(), Some(symbol), "for {input}");
+            assert_eq!(
+                r.canonical_symbol(input).as_deref(),
+                Some(symbol),
+                "for {input}"
+            );
         }
         // The registry's own choice is still what displays.
         assert_eq!(r.describe("km").as_deref(), Some("kilometre"));
@@ -1661,7 +1808,10 @@ aliases = ["megawatt"]
         .unwrap();
         assert_eq!(r.canonical_symbol("tonne").as_deref(), Some("t"));
         assert_eq!(r.canonical_symbol("ton").as_deref(), Some("ton"));
-        assert_ne!(r.resolve("t").unwrap().factor, r.resolve("ton").unwrap().factor);
+        assert_ne!(
+            r.resolve("t").unwrap().factor,
+            r.resolve("ton").unwrap().factor
+        );
     }
 
     #[test]
@@ -1677,9 +1827,18 @@ aliases = ["megawatt"]
         let m = e.message();
         assert!(m.contains("is ambiguous"), "{m}");
         assert!(m.contains("[registry.prefix_collisions]"), "{m}");
-        assert!(m.contains("why the authored reading wins"), "the reason is asked for: {m}");
-        assert!(m.contains("femtotonne"), "the sacrificed reading is named: {m}");
-        assert!(m.contains("unavailable entirely"), "the cost is stated: {m}");
+        assert!(
+            m.contains("why the authored reading wins"),
+            "the reason is asked for: {m}"
+        );
+        assert!(
+            m.contains("femtotonne"),
+            "the sacrificed reading is named: {m}"
+        );
+        assert!(
+            m.contains("unavailable entirely"),
+            "the cost is stated: {m}"
+        );
     }
 
     #[test]
@@ -1709,7 +1868,9 @@ aliases = ["megawatt"]
         // A verbose "escape hatch" would hand back a canonical string meaning
         // something else — silently.
         assert!(r.resolve("femtotonne").is_none());
-        assert!(r.resolve("ft").is_some_and(|u| u.dimension_name == "length"));
+        assert!(r
+            .resolve("ft")
+            .is_some_and(|u| u.dimension_name == "length"));
     }
 
     #[test]
@@ -1735,13 +1896,19 @@ aliases = ["megawatt"]
 
         // The proactive check: ask before declaring, not after the load fails.
         let risk = r.would_collide("ft").expect("ft is contested");
-        assert_eq!((risk.prefix, risk.prefix_long, risk.base.as_str()), ("f", "femto", "t"));
+        assert_eq!(
+            (risk.prefix, risk.prefix_long, risk.base.as_str()),
+            ("f", "femto", "t")
+        );
         assert!(risk.authored.is_none(), "nothing declared there yet");
         assert!(!risk.resolved);
 
         // A symbol nothing can produce is free.
         assert!(r.would_collide("mile").is_none());
-        assert!(r.would_collide("t").is_none(), "the base itself is not a collision");
+        assert!(
+            r.would_collide("t").is_none(),
+            "the base itself is not a collision"
+        );
 
         // The full reserved set is derived from what this registry made
         // prefixable — it is not a fixed list.
@@ -1764,7 +1931,11 @@ aliases = ["megawatt"]
         )
         .unwrap();
         let risks = r.collision_risks();
-        assert_eq!(risks.len(), 1, "exactly one judgement call in this registry");
+        assert_eq!(
+            risks.len(),
+            1,
+            "exactly one judgement call in this registry"
+        );
         let ft = &risks[0];
         assert_eq!(ft.symbol, "ft");
         assert_eq!(ft.authored.as_deref(), Some("length"));
@@ -1790,8 +1961,16 @@ aliases = ["megawatt"]
              prefixes = \"si-engineering\"\n",
         )
         .unwrap_err();
-        assert!(list.message().contains("must be a table"), "{}", list.message());
-        assert!(list.message().contains("ft = "), "shows the shape: {}", list.message());
+        assert!(
+            list.message().contains("must be a table"),
+            "{}",
+            list.message()
+        );
+        assert!(
+            list.message().contains("ft = "),
+            "shows the shape: {}",
+            list.message()
+        );
 
         // An empty reason is the same omission with extra steps.
         let blank = Registry::from_toml(
@@ -1803,7 +1982,11 @@ aliases = ["megawatt"]
              prefixes = \"si-engineering\"\n",
         )
         .unwrap_err();
-        assert!(blank.message().contains("empty reason"), "{}", blank.message());
+        assert!(
+            blank.message().contains("empty reason"),
+            "{}",
+            blank.message()
+        );
     }
 
     #[test]
@@ -1826,13 +2009,23 @@ aliases = ["megawatt"]
         assert!(m.contains("refused rather than guessed"), "{m}");
         assert!(m.contains("Roman thousand"), "the reason travels: {m}");
         assert!(m.contains("`MMBtu`"), "the fix is named: {m}");
-        assert!(m.contains("https://example.invalid/ambiguity"), "points at docs: {m}");
+        assert!(
+            m.contains("https://example.invalid/ambiguity"),
+            "points at docs: {m}"
+        );
         // And it must NOT read as a typo.
-        assert!(!m.contains("did you mean"), "a deliberate refusal is not a typo: {m}");
+        assert!(
+            !m.contains("did you mean"),
+            "a deliberate refusal is not a typo: {m}"
+        );
 
         // An ordinary unknown symbol still gets the suggestion path.
         let typo = crate::canonicalize("Btuu", &r, 1).unwrap_err();
-        assert!(typo.message().contains("does not resolve"), "{}", typo.message());
+        assert!(
+            typo.message().contains("does not resolve"),
+            "{}",
+            typo.message()
+        );
     }
 
     #[test]
@@ -1843,7 +2036,11 @@ aliases = ["megawatt"]
              [unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n",
         )
         .unwrap_err();
-        assert!(e.message().contains("non-empty `reason`"), "{}", e.message());
+        assert!(
+            e.message().contains("non-empty `reason`"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]
@@ -1861,9 +2058,10 @@ aliases = ["megawatt"]
 
     #[test]
     fn loads_the_conformance_registry() {
-        let src = std::fs::read_to_string(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/../../conformance/registry/conformance-core.toml"),
-        )
+        let src = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../conformance/registry/conformance-core.toml"
+        ))
         .expect("conformance registry present");
         let r = Registry::from_toml(&src).expect("conformance registry is valid");
         assert_eq!(r.name, "conformance-core");
