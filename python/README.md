@@ -131,3 +131,29 @@ roadmap will be published in this repository.
 *UnitArrow began in energy-systems research — where BTU, MWh, and
 per-unit quantities collide daily — but nothing in it is
 energy-specific.*
+
+## Testing
+
+```bash
+cd python && maturin develop && pytest tests -q
+```
+
+The suite is deliberately **not** a second copy of the Rust tests — the core's
+behaviour is covered by 156 of those. These cover what only exists at the
+boundary:
+
+- §10 error codes surviving into Python exception messages, since the codes are
+  the wire-stable vocabulary and a caller matching on them should still be able
+  to tell which condition fired
+- 128-bit factors crossing the FFI **exact**, not rounded through a float
+- the π exponent being visible, so a caller can tell when a factor has no exact
+  rational form rather than silently receiving an approximation
+- metadata placement: existing field metadata preserved, schema-level metadata
+  preserved, retagging replacing rather than duplicating
+- `units_of()` omitting untagged columns rather than reporting `None` — §5.3
+  makes "no unit" the absence of a claim, not a claim of dimensionlessness
+- validation firing before anything is written, so a bad unit cannot produce a
+  partially tagged table
+
+Each assertion about `tag()` was mutation-tested: the behaviour was broken
+deliberately and the test confirmed to fail.
