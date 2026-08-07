@@ -112,6 +112,12 @@ fn from_parsed(parsed: &ParsedUnit, registry: &Registry) -> Result<CanonicalUnit
     let mut resolved: Vec<(String, i32)> = Vec::with_capacity(parsed.terms.len());
     for t in &parsed.terms {
         let unit = registry.resolve(&t.symbol).ok_or_else(|| {
+            // A spelling the registry deliberately refuses is not a typo, and a
+            // "did you mean" reads as though it were. Say why it was refused.
+            if let Some(a) = registry.ambiguity(&t.symbol) {
+                return Error::at(ErrorCode::UnknownUnit, a.describe(&t.symbol), t.offset)
+                    .with_symbol(&t.symbol);
+            }
             let hints = registry.suggest(&t.symbol);
             let tail = if hints.is_empty() {
                 String::new()

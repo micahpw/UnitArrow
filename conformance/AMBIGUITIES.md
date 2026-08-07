@@ -2614,6 +2614,73 @@ load-time check and `prefix_collisions` remain load-bearing either way. What the
 separator would add is a canonical spelling for a shadowed reading, if canonical
 form ever adopts it (see the fork above, still open).
 
+**Extension surfaced 2026-08-07 by AMB-069's `MBtu` case: an optional
+separator does not close an ambiguous concatenation.**
+
+`MBtu` means 10⁶ Btu under SI prefixes and 10³ in the US gas industry, where
+`M` is the Roman thousand. Asked whether `M.Btu` would settle it — and it
+would, *for the spelling that uses it*. But the ruling above makes `.`
+**optional**, so making `Btu` prefixable still mints the bare `MBtu`, still at
+10⁶, still colliding with the industry reading. **The separator adds an
+unambiguous spelling; it does not subtract the ambiguous one.**
+
+What would close it is a third state between prefixable and not — a per-unit
+declaration that prefixes apply *only* through the explicit form:
+
+```toml
+[unit.Btu]
+prefixes = "si-engineering"
+prefix_separator = "required"    # M.Btu resolves; MBtu does not
+```
+
+That is narrower than making the separator mandatory everywhere (which would
+break `MW` and every tagged column in existence) and stronger than leaving it
+optional. It is the right shape for any unit whose concatenated prefix form is
+already spoken for by another convention — which is a small set, but `Btu` is
+in it and heat rate is not a niche quantity.
+
+**RULED 2026-08-07 — the separator mode is accepted in principle for grammar
+v2; the diagnostic half is implemented now.** A mandatory-separator unit is the
+right tool and cannot ship before `.` is legal. But the reason a refusal exists
+is independent of the syntax, and that half was the weaker one: `MBtu` used to
+fail as `E_UNKNOWN_UNIT — did you mean MMBtu?`, which reads as a typo when it is
+a deliberate refusal, and discards the thousand-fold reason entirely.
+
+Registries may now declare refused spellings with a required reason:
+
+```toml
+[registry.ambiguous.MBtu]
+reason = "under SI prefixes M is mega, so MBtu reads as 10^6 Btu; the US gas industry reads M as the Roman thousand and means 10^3 Btu."
+use = ["MMBtu", "Btu"]
+see = "https://unitarrow.org/generated/ambiguity/"
+```
+
+which produces, at the moment a user hits it:
+
+```
+"MBtu" is ambiguous and is refused rather than guessed: under SI prefixes M is
+mega, so MBtu reads as 10^6 Btu; the US gas industry reads M as the Roman
+thousand and means 10^3 Btu. Nothing in the string says which, and the two
+differ by 1000x. Write one of `MMBtu`, `Btu` instead. See
+https://unitarrow.org/generated/ambiguity/
+```
+
+An ordinary typo still gets suggestions rather than a lecture — the two paths
+are distinguished by whether the registry declared the spelling.
+
+Two load-time checks, both mutation-tested: a refusal without a reason is
+rejected (same principle as `prefix_collisions`), and so is a refusal for a
+spelling the registry also defines, since it could never fire while the author
+believed it was protecting them.
+
+**The documentation the error points at is generated from the same
+declarations**, so the page and the message cannot disagree — neither is
+written by hand.
+
+Still deferred: `prefix_separator = "required"`, which needs grammar v2. Until
+then `Btu` stays non-prefixable and `MBtu` is refused with the explanation
+above.
+
 *Cases:* none — grammar v2.
 
 ---
@@ -3891,6 +3958,69 @@ option 2 ever lands.
 
 ---
 
+### AMB-069 — nothing records which measurement convention a unit follows
+**§7.2 · gap · RULED 2026-08-07**
+
+Raised on discovering that `MBtu` means 10⁶ Btu under SI prefixes and 10³ in
+the US gas industry — the Roman thousand — a 1000× gap with nothing in the
+symbol to say which. The proposal was a **top-level registry declaration**: SI,
+US, or imperial.
+
+**RULED 2026-08-07 — per unit, not per registry, and derived rather than
+declared at the top.** Three reasons, the last decisive.
+
+*Real registries are mixed.* `power-systems.toml`, written for one domain,
+holds SI (`W`, `V`, `J`), IEC (`var`), US customary (`Btu`, `mi`), non-SI
+metric (`t`, `h`, `deg`), ISO 4217 (`USD`) and industry spellings (`MVAR`).
+Derived from the units themselves:
+
+```
+  si                         17 units
+  non-si-accepted             8 units
+  industry                    4 units
+  us-customary                4 units
+  iec                         2 units
+```
+
+No single top-level label is true for that file, and it is not an unusual file.
+
+*An advisory flag would not fix the case that prompted it.* The ambiguity is in
+the symbol; the remedy has to be at the symbol. Here `Btu` is simply not
+prefixable, so `MBtu` does not resolve at all — refusing an ambiguous symbol
+being the correct answer to one.
+
+*A **behavioural** flag would be actively dangerous.* If `M` meant 10⁶ in one
+registry and 10³ in another, the same canonical string would denote different
+quantities in different registries — §6.3 would stop being an equality
+primitive, which is AMB-059's hazard promoted from the unit table into the
+prefix table, where no boundary check could see it. **Prefix semantics must be
+universal.**
+
+**Implemented.** §7.2's `provenance` key was already specified and shown in the
+spec's own example — and the loader was **accepting it and throwing it away**,
+so the documented field silently lost its data. It is now parsed into
+`Unit::provenance` (`system`, `source`, `scope`, `note`), inherited by derived
+prefixed forms (`kW` is as SI as `W`), and summarised by `Registry::systems()`.
+
+The summary is **derived, never declared**, for the same reason the register's
+entry count is computed: a hand-maintained summary drifts from its contents.
+`Registry::units_without_a_stated_system()` reports the gaps rather than
+defaulting them, because a unit whose reading depends on a convention should
+say which one.
+
+**Related.** AMB-056's `.` separator would give `M.Btu` an unambiguous
+spelling, but as ruled it is *optional*, so the bare `MBtu` survives alongside
+it. Closing the case needs a per-unit *separator required* mode — recorded as
+an extension on AMB-056, and dependent on grammar v2.
+
+**Still open.** Whether `system` should be a controlled vocabulary rather than
+free text. Free text was chosen so a registry can say `"iec"` or `"iso-4217"`
+without a spec change, but it means `"us"` and `"us-customary"` do not group.
+
+*Cases:* none yet; belongs with the `registry/` category alongside AMB-043.
+
+---
+
 ## Summary
 
 | Severity | Count | IDs |
@@ -3900,7 +4030,7 @@ option 2 ever lands.
 | implicit | 3 | 012, 024, 034 |
 | design question | 2 | 055, 056 |
 
-68 entries total; **20 decided**, seven directions ruled (044, 048, 049, 051, 052, 053,
+69 entries total; **21 decided**, seven directions ruled (044, 048, 049, 051, 052, 053,
 054), two open design questions (055, 056), the rest open. Two recommendations were **reversed** in
 [DECISIONS.md](DECISIONS.md) after deeper analysis — AMB-016 (offset
 convention) and AMB-019 (the `interval` reverse check). The text below is the

@@ -32,3 +32,11 @@ docs/generated/
 # compiled from crates/unitarrow-wasm by .github/workflows/docs.yml —
 # rebuild, do not commit. Build locally with the command in CLAUDE.md.
 docs/wasm/
+
+# Built by `maturin develop` into the source tree for editable installs.
+# It is a compiled artifact of crates/unitarrow-py, not source.
+python/src/unitarrow/*.so
+python/src/unitarrow/*.pyd
+python/src/unitarrow/*.dylib
+__pycache__/
+.pytest_cache/
