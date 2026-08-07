@@ -1,0 +1,145 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.1",
+      "6.3"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "Canonical-form step 2: merging repeated symbols by summing exponents, and dropping zeros.",
+  "cases": [
+    {
+      "id": "parsing.merging.001",
+      "spec_ref": "§6.3 step 2",
+      "status": "normative",
+      "input": {
+        "unit": "m*m"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "m^2",
+        "dimension": {
+          "length": 2
+        }
+      },
+      "rationale": "Repeated symbols merge; the implicit exponent of each term is 1."
+    },
+    {
+      "id": "parsing.merging.002",
+      "spec_ref": "§6.3 step 2",
+      "status": "normative",
+      "input": {
+        "unit": "MW*MW*MW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW^3",
+        "dimension": {
+          "mass": 3,
+          "length": 6,
+          "time": -9
+        }
+      },
+      "rationale": "Merging is n-ary, not pairwise-left. Three terms collapse to one."
+    },
+    {
+      "id": "parsing.merging.003",
+      "spec_ref": "§6.3 steps 2 and 4",
+      "status": "normative",
+      "input": {
+        "unit": "m^2*m^-2"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "1",
+        "dimension": {}
+      },
+      "rationale": "Exponents sum to zero, the term is dropped, and the empty product serializes as \"1\"."
+    },
+    {
+      "id": "parsing.merging.004",
+      "spec_ref": "§6.3 steps 2 and 4",
+      "status": "normative",
+      "input": {
+        "unit": "s/s"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "1",
+        "dimension": {}
+      },
+      "rationale": "Division contributes a negative exponent to the same symbol, so this merges to zero exactly like m^2*m^-2. The result is an explicit dimensionless claim (§5.3), not untagged."
+    },
+    {
+      "id": "parsing.merging.005",
+      "spec_ref": "§6.3 step 2",
+      "status": "normative",
+      "input": {
+        "unit": "m^3*m^-1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "m^2",
+        "dimension": {
+          "length": 2
+        }
+      },
+      "rationale": "Partial cancellation leaves a positive remainder."
+    },
+    {
+      "id": "parsing.merging.006",
+      "spec_ref": "§6.3 steps 2 and 3",
+      "status": "normative",
+      "input": {
+        "unit": "m^2/m^3"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "m^-1",
+        "dimension": {
+          "length": -1
+        }
+      },
+      "rationale": "Merging flips the sign of the surviving term, leaving no positive terms. Under the decided canonical form a pure negative expression is directly spellable — the sign lives in the exponent — which closes the old unspellable-inverse hole (AMB-004)."
+    },
+    {
+      "id": "parsing.merging.007",
+      "spec_ref": "§6.3 steps 2 and 3",
+      "status": "normative",
+      "input": {
+        "unit": "m^3/m^2"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "m",
+        "dimension": {
+          "length": 1
+        }
+      },
+      "rationale": "Merging produces exponent 1, which step 3 omits. An implementation that emits m^1 here is non-canonical."
+    },
+    {
+      "id": "parsing.merging.008",
+      "spec_ref": "§6.3 steps 2 and 3",
+      "status": "normative",
+      "input": {
+        "unit": "MW*h*MW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW^2*h",
+        "dimension": {
+          "mass": 2,
+          "length": 4,
+          "time": -5
+        }
+      },
+      "rationale": "Duplicated symbols need not be adjacent. Merge before sorting; sorting a term list that still contains duplicates gives the right string here by luck and the wrong one in general."
+    }
+  ]
+}

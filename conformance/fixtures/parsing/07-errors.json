@@ -1,0 +1,216 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.1",
+      "6.2",
+      "6.3",
+      "10"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "Expected §10 error codes for unresolvable symbols, malformed strings, out-of-range exponents, and unsupported grammar versions.",
+  "cases": [
+    {
+      "id": "parsing.errors.001",
+      "spec_ref": "§6.3, §10",
+      "status": "normative",
+      "mode": "strict",
+      "input": {
+        "unit": "Zorkmid"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNKNOWN_UNIT"
+      },
+      "rationale": "Well-formed under the grammar, absent from the registry. §6.3 is explicit that strict mode MUST reject unresolvable symbols."
+    },
+    {
+      "id": "parsing.errors.002",
+      "spec_ref": "§6.3, §8.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-020",
+        "AMB-021"
+      ],
+      "mode": "permissive",
+      "input": {
+        "unit": "Zorkmid"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNKNOWN_UNIT"
+      },
+      "rationale": "The parser raises the same code in both modes; mode selects what the READER does with it, not whether parsing fails. That layering matters because §8.4 says working tables have no mode at all, so a mode-dependent parser would have undefined behavior on the most common artifact. AMB-021 recommends the permissive reader catch this, warn once, taint the column, and preserve the original string verbatim for round-trip."
+    },
+    {
+      "id": "parsing.errors.003",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "MW**h"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "Two operators in a row. §10 has no code for a parse failure — E_UNKNOWN_UNIT is about symbol resolution, and reporting \"unknown unit MW**h\" would send the user to check their registry over a typo."
+    },
+    {
+      "id": "parsing.errors.004",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "MW^"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "A caret with no integer."
+    },
+    {
+      "id": "parsing.errors.005",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "MW*"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "Trailing operator with no right-hand term."
+    },
+    {
+      "id": "parsing.errors.006",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "(m*s)"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "§6.1 states there are no parentheses. Their absence is what makes left-to-right division binding unambiguous, so accepting them would quietly reintroduce the grouping question."
+    },
+    {
+      "id": "parsing.errors.007",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "m s"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "Two symbols separated only by whitespace. This case replaced `MW * h` when AMB-006 was revised: spaces at the edges and around operators are now accepted, because they cannot change meaning, but a space between symbols can. Collapsing `m s` to `ms` yields millisecond — a different dimension, silently — and reading the space as multiplication would give the product a second spelling. The error names the fix instead of guessing."
+    },
+    {
+      "id": "parsing.errors.008",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "0.5*MW"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "§6.1 calls out this exact string as invalid — numeric prefixes and scale factors are not allowed inside unit strings; prefixed units are distinct registry entries. The spec says invalid but names no code, which is the only reason this case is provisional."
+    },
+    {
+      "id": "parsing.errors.009",
+      "spec_ref": "§6.1, §7.2, §10",
+      "status": "normative",
+      "input": {
+        "unit": "°C"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "°C is degC's display.unicode form, not a symbol. Display forms are output-only. Under AMB-005's ASCII symbol class the degree sign cannot begin a symbol, so this is a syntax error rather than an unknown unit — a distinction that only exists once the lexical class is actually defined."
+    },
+    {
+      "id": "parsing.errors.010",
+      "spec_ref": "§6.1, §10",
+      "status": "normative",
+      "input": {
+        "unit": "MW^+2"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "An explicit plus sign is a second spelling of ^2. Rejecting keeps one spelling per expression; accepting would require step 3 to normalize it, which §6.3 does not mention."
+    },
+    {
+      "id": "parsing.errors.011",
+      "spec_ref": "§6.1, §6.2, §10",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-008",
+        "AMB-015"
+      ],
+      "input": {
+        "unit": "m^200"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_EXP_RANGE"
+      },
+      "rationale": "§6.2 fixes dimension exponents at signed 8-bit; §6.1 puts no bound on unit-string exponents. 200 is grammatically valid and dimensionally unrepresentable, and §10 has no code for the gap."
+    },
+    {
+      "id": "parsing.errors.012",
+      "spec_ref": "§6.2, §6.3 step 2, §10",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-008",
+        "AMB-015"
+      ],
+      "input": {
+        "unit": "m^100*m^100"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_EXP_RANGE"
+      },
+      "rationale": "Each term is individually in range; the merge overflows. The range check therefore belongs after §6.3 step 2, not in the lexer — an implementation that only validates per-term silently wraps to -56 here."
+    },
+    {
+      "id": "parsing.errors.013",
+      "spec_ref": "§5.2, §10",
+      "status": "normative",
+      "grammar": 2,
+      "input": {
+        "unit": "MW"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_GRAMMAR_VERSION"
+      },
+      "rationale": "The wire declares a grammar newer than this implementation supports. The unit string itself is perfectly valid under grammar 1 — the failure is the version claim, and guessing would be how a v2 rational exponent gets silently misread."
+    },
+    {
+      "id": "parsing.errors.014",
+      "spec_ref": "§6.1, §12",
+      "status": "normative",
+      "input": {
+        "unit": "m^1/2"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_SYNTAX"
+      },
+      "rationale": "Rational exponents are excluded from grammar v1 and deferred to v2 (§12). Under v1 this lexes as m^1 divided by the term \"2\", and 2 is not a symbol. A v1 implementation must not partially honour v2 syntax."
+    }
+  ]
+}

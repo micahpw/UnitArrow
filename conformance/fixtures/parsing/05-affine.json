@@ -1,0 +1,181 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.3",
+      "6.4"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "§6.4 affine non-composability and the delta counterparts that are composable. Conversion arithmetic lives in the factors category.",
+  "cases": [
+    {
+      "id": "parsing.affine.001",
+      "spec_ref": "§6.4",
+      "status": "normative",
+      "input": {
+        "unit": "degC"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "degC",
+        "dimension": {
+          "temperature": 1
+        }
+      },
+      "rationale": "A bare affine unit is valid; only compound expressions are forbidden."
+    },
+    {
+      "id": "parsing.affine.002",
+      "spec_ref": "§6.4",
+      "status": "normative",
+      "input": {
+        "unit": "degC*h"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_AFFINE_COMPOUND"
+      },
+      "rationale": "Unambiguously compound. Degree-Celsius-hours is not a meaningful quantity: the offset makes the product depend on the arbitrary zero of the scale."
+    },
+    {
+      "id": "parsing.affine.003",
+      "spec_ref": "§6.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-017"
+      ],
+      "input": {
+        "unit": "degC^1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "degC",
+        "dimension": {
+          "temperature": 1
+        }
+      },
+      "rationale": "One term with a redundant exponent of 1 is the same expression as a bare symbol, so it is not compound. \"Compound\" is never defined in §6.4; this case pins the boundary."
+    },
+    {
+      "id": "parsing.affine.004",
+      "spec_ref": "§6.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-017"
+      ],
+      "input": {
+        "unit": "degC^2"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_AFFINE_COMPOUND"
+      },
+      "rationale": "A single term, but squaring an affine scale is as meaningless as multiplying two of them. The rule is one term with exponent 1, not one term."
+    },
+    {
+      "id": "parsing.affine.005",
+      "spec_ref": "§6.4, §6.3 step 2",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-017"
+      ],
+      "input": {
+        "unit": "degC/degC"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_AFFINE_COMPOUND"
+      },
+      "rationale": "The ordering of the affine check against §6.3 step 2 is observable here. Check before merging and this fails; check after merging and it is dimensionless and passes. AMB-017 recommends checking the parsed term list, so this fails — and the error names what the user actually wrote."
+    },
+    {
+      "id": "parsing.affine.006",
+      "spec_ref": "§6.4, §6.3 step 2",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-017"
+      ],
+      "input": {
+        "unit": "degC*h/h"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_AFFINE_COMPOUND"
+      },
+      "rationale": "Same check-ordering question as parsing.affine.005, but merging here would leave a bare degC rather than dimensionless — so a merge-first implementation returns success with canonical form degC. Rejecting is the conservative reading."
+    },
+    {
+      "id": "parsing.affine.007",
+      "spec_ref": "§6.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-018"
+      ],
+      "input": {
+        "unit": "delta_degC"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "delta_degC",
+        "dimension": {
+          "temperature": 1
+        }
+      },
+      "rationale": "The delta counterpart shares its partner's dimension. §6.4 names delta units but never specifies them as registry entries, so their dimension and factor are assumed rather than stated."
+    },
+    {
+      "id": "parsing.affine.008",
+      "spec_ref": "§6.4",
+      "status": "provisional",
+      "blocked_on": [
+        "AMB-018"
+      ],
+      "input": {
+        "unit": "delta_degC/h"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "delta_degC*h^-1",
+        "dimension": {
+          "temperature": 1,
+          "time": -1
+        }
+      },
+      "rationale": "Delta units are purely multiplicative and freely composable — a warming rate is exactly what the delta unit exists to express. This is the case that makes the affine/delta split worth the complexity."
+    },
+    {
+      "id": "parsing.affine.009",
+      "spec_ref": "§6.4",
+      "status": "normative",
+      "input": {
+        "unit": "degF"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "degF",
+        "dimension": {
+          "temperature": 1
+        }
+      },
+      "rationale": "degF is the unit that discriminates between the two readings of §6.4's conversion formula (AMB-016) — but parsing is unaffected, so this case is normative."
+    },
+    {
+      "id": "parsing.affine.010",
+      "spec_ref": "§6.4",
+      "status": "normative",
+      "input": {
+        "unit": "degF*delta_degC"
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_AFFINE_COMPOUND"
+      },
+      "rationale": "One composable operand does not rescue the expression. The rule is about the presence of an affine symbol anywhere, not about the other terms."
+    }
+  ]
+}

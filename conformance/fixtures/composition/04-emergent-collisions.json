@@ -1,0 +1,113 @@
+{
+  "fixture_version": 1,
+  "category": "composition",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "7.5",
+      "7.1"
+    ]
+  },
+  "description": "Failures a composition can have that no constituent could have alone.",
+  "cases": [
+    {
+      "id": "composition.emergent.001",
+      "spec_ref": "\u00a77.5 rule 6",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "imperial",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"imperial\"\nversion = \"1\"\n[unit.ft]\ndimension = \"length\"\nfactor = [381, 1250]\ndisplay = { long = \"foot\" }\n"
+          },
+          {
+            "name": "metric",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"metric\"\nversion = \"1\"\n[unit.t]\ndimension = \"mass\"\nfactor = [1000, 1]\nprefixes = \"si-engineering\"\ndisplay = { long = \"tonne\" }\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "ft"
+        ]
+      },
+      "rationale": "THE case worth having. `imperial` defines `ft` (foot); `metric` makes `t` prefixable. Each loads perfectly alone. Together, femto+t collides with foot for the first time \u2014 a collision that exists only in the composition. Note that contested() reports NOTHING here: no symbol is defined twice, so this is not a definition contest and only the final load catches it."
+    },
+    {
+      "id": "composition.emergent.002",
+      "spec_ref": "\u00a77.5 rule 5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "imperial",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"imperial\"\nversion = \"1\"\n[unit.ft]\ndimension = \"length\"\nfactor = [381, 1250]\ndisplay = { long = \"foot\" }\n"
+          },
+          {
+            "name": "metric",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"metric\"\nversion = \"1\"\n[unit.t]\ndimension = \"mass\"\nfactor = [1000, 1]\nprefixes = \"si-engineering\"\ndisplay = { long = \"tonne\" }\n"
+          },
+          {
+            "name": "deployment",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"deployment\"\nversion = \"1\"\n[registry.prefix_collisions]\nft = \"this deployment surveys land; femto-tonne is not a quantity anyone reports\"\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "ok",
+        "composed_from": [
+          "deployment",
+          "imperial",
+          "metric"
+        ],
+        "resolves": {
+          "ft": {
+            "dimension_name": "length",
+            "describes": "foot"
+          },
+          "Gt": {
+            "dimension_name": "mass",
+            "resolvable": true
+          },
+          "femtotonne": {
+            "resolvable": false
+          }
+        }
+      },
+      "rationale": "How a composer resolves it: contribute their own source declaring prefix_collisions. A source defining no units is legal and exists for exactly this. Note `Gt` survives \u2014 narrowing the prefix set would have been the wrong fix, since emissions are reported in gigatonnes \u2014 while `femtotonne` becomes unresolvable, which is correct: its canonical form is `ft`, which now means foot."
+    },
+    {
+      "id": "composition.emergent.003",
+      "spec_ref": "\u00a77.5 rule 6",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "x",
+            "version": "1",
+            "toml": "[registry]\nschema_version = 1\nname = \"x\"\nversion = \"1\"\n[unit.W]\ndimension = \"power\"\nfactor = [1, 1]\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "power"
+        ]
+      },
+      "rationale": "Composition must never emit an unloadable registry: downstream has exactly one artifact and no fallback."
+    }
+  ]
+}

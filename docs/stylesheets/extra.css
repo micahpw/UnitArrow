@@ -1,0 +1,129 @@
+/* Canonical strings, factors, and error codes are the substance of these pages,
+   so inline code should read as data rather than prose. */
+.md-typeset code {
+  font-size: 0.85em;
+  border-radius: 3px;
+}
+
+/* Generated tables are wide — factor pairs and dimension vectors get long.
+   Let the table scroll if it must, but let prose cells wrap so the rightmost
+   columns (which carry the payoff) stay readable. */
+.md-typeset table:not([class]) {
+  font-size: 0.75rem;
+  display: block;
+  overflow-x: auto;
+}
+
+/* Keep a single canonical string or factor pair on one line — line-broken
+   `MW*h^-1` is actively misleading. */
+.md-typeset table:not([class]) code {
+  white-space: nowrap;
+}
+
+/* Slightly wider content column: the tables want the room. */
+@media screen and (min-width: 76.25em) {
+  .md-grid {
+    max-width: 70rem;
+  }
+}
+
+/* The ⚠️ in the guardrail table marks a real gap, not decoration — give it
+   enough weight to notice while scanning. */
+.md-typeset table:not([class]) td strong {
+  color: var(--md-accent-fg-color);
+}
+
+/* The rightmost column of a generated table is prose ("why", "covers") and
+   collapses to a sliver when the numeric columns claim the width. */
+.md-typeset table:not([class]) td:last-child,
+.md-typeset table:not([class]) th:last-child {
+  min-width: 15rem;
+}
+
+/* ---- interactive playground ---- */
+.ua-play {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+.ua-play label {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--md-default-fg-color--light);
+  margin-bottom: 0.25rem;
+}
+.ua-play input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font-family: var(--md-code-font-family);
+  font-size: 0.9rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 4px;
+  background: var(--md-code-bg-color);
+  color: var(--md-code-fg-color);
+}
+.ua-play input:focus {
+  outline: 2px solid var(--md-accent-fg-color);
+  outline-offset: -1px;
+}
+.ua-fields {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.ua-fields > div { flex: 1 1 12rem; }
+
+.ua-out {
+  margin-top: 0.9rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 4px;
+  border-left: 3px solid var(--md-default-fg-color--lighter);
+  background: var(--md-code-bg-color);
+  font-size: 0.8rem;
+}
+.ua-out.ua-ok { border-left-color: #43a047; }
+.ua-out.ua-err { border-left-color: #e53935; }
+.ua-out.ua-idle { color: var(--md-default-fg-color--light); }
+
+.ua-row { display: flex; gap: 0.6rem; align-items: baseline; margin: 0.2rem 0; }
+.ua-label {
+  flex: 0 0 6.5rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--md-default-fg-color--light);
+}
+.ua-big { font-size: 1.05rem; font-weight: 600; }
+.ua-code { color: #e53935; font-weight: 600; }
+.ua-msg { margin-top: 0.4rem; line-height: 1.5; }
+.ua-caret {
+  margin: 0.5rem 0 0.2rem;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  background: var(--md-default-bg-color);
+  border-radius: 3px;
+  overflow-x: auto;
+}
+.ua-table { width: auto; font-size: 0.78rem; margin-top: 0.6rem; }
+.ua-table th, .ua-table td { padding: 0.15rem 0.9rem 0.15rem 0; text-align: left; }
+.ua-table th { color: var(--md-default-fg-color--light); font-weight: 600; }
+
+.ua-chips { margin-top: 0.7rem; display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.ua-chips button {
+  font-family: var(--md-code-font-family);
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--md-default-fg-color);
+  cursor: pointer;
+}
+.ua-chips button:hover {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color);
+}

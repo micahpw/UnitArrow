@@ -1,0 +1,144 @@
+{
+  "$schema": "../../schema/fixture.schema.json",
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.1",
+      "6.3"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "Canonical-form step 3: term ordering, collation, and positive-before-negative grouping.",
+  "cases": [
+    {
+      "id": "parsing.ordering.001",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "h*MW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*h",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -2
+        }
+      },
+      "rationale": "Terms sort by symbol, not by the order the producer wrote them."
+    },
+    {
+      "id": "parsing.ordering.002",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "m*kW*h*MW*W*Btu"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "Btu*MW*W*h*kW*m",
+        "dimension": {
+          "mass": 4,
+          "length": 9,
+          "time": -10
+        }
+      },
+      "rationale": "Bytewise UTF-8 collation puts every uppercase-initial symbol before every lowercase-initial one. A case-folding collation would produce Btu*h*kW*m*MW*W — a different string, and therefore a different hash, for the same expression. This case is the whole reason AMB-003 has to be decided rather than assumed."
+    },
+    {
+      "id": "parsing.ordering.003",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "mW*MW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*mW",
+        "dimension": {
+          "mass": 2,
+          "length": 4,
+          "time": -6
+        }
+      },
+      "rationale": "Two units differing only by case must have a defined order. 'M' (0x4D) sorts before 'm' (0x6D) bytewise."
+    },
+    {
+      "id": "parsing.ordering.004",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "mW*m"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "m*mW",
+        "dimension": {
+          "mass": 1,
+          "length": 3,
+          "time": -3
+        }
+      },
+      "rationale": "One symbol is a proper prefix of another. Bytewise comparison puts the shorter first, so m precedes mW."
+    },
+    {
+      "id": "parsing.ordering.005",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "s^-1*MW"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "MW*s^-1",
+        "dimension": {
+          "mass": 1,
+          "length": 2,
+          "time": -4
+        }
+      },
+      "rationale": "All positive-exponent terms precede all negative-exponent terms regardless of source order. Under the decided canonical form (AMB-001: no slashes on output) the sign renders in the exponent itself."
+    },
+    {
+      "id": "parsing.ordering.006",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "W/m^2/K"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "W*K^-1*m^-2",
+        "dimension": {
+          "mass": 1,
+          "time": -3,
+          "temperature": -1
+        }
+      },
+      "rationale": "The negative terms sort among themselves: K (0x4B) before m (0x6D) bytewise. Also note length cancels to zero and is omitted from the dimension vector entirely."
+    },
+    {
+      "id": "parsing.ordering.007",
+      "spec_ref": "§6.3 step 3",
+      "status": "normative",
+      "input": {
+        "unit": "USD/MWh"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "USD*MWh^-1",
+        "dimension": {
+          "currency": 1,
+          "mass": -1,
+          "length": -2,
+          "time": 2
+        }
+      },
+      "rationale": "One positive and one negative term; grouping alone fixes the order, so no collation question arises. Also exercises §6.2's currency base dimension — USD/MWh parses and propagates even though §2 forbids cross-currency conversion."
+    }
+  ]
+}

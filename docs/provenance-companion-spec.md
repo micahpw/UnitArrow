@@ -1,6 +1,6 @@
 # Provenance Companion Specification (working name)
 
-**Version:** 0.1.0-draft
+**Version:** 0.5.0-draft
 **Status:** Draft for review
 **Editor:** Micah
 **Hosted with:** the UnitArrow project (`unitarrow` org); applies to any
@@ -200,18 +200,43 @@ of "this table was modified after it was published" is non-conformant.
 derivation=None)` finalizes a data product:
 
 1. Run the requested check across all columns (strict failure aborts).
-2. Pin the registry version + content hash and library version.
+2. Pin the **effective** registry (name, version, content hash), every
+   constituent it was composed from (the same triple each, UnitArrow §7.5),
+   every loaded vocabulary (likewise), and the library version — a
+   checking-level claim is not reproducible without the full set of artifacts
+   it ran against. Whether the effective registry's *bytes* travel is the
+   publisher's embedding choice (UnitArrow §5.6); the seal covers the hash
+   either way, so integrity does not depend on that choice.
 3. Compute the **data digest**: SHA-256 over the canonical IPC serialization
    of (schema with all metadata *except* the seal itself, followed by record
    batches in order).
 4. Assemble the provenance block (for UnitArrow tables, UnitArrow §5.6) and sign it with the publisher's
    Ed25519 key.
-5. Embed the seal in schema metadata. No sidecar files, ever.
+5. Embed the seal in schema metadata. No sidecar files, ever. `publish()`
+   also lints metadata size (free-text descriptions and similar): a
+   generous per-field threshold warns in permissive mode and fails in
+   strict — documentation is paragraphs, not embedded documents.
 6. If a `destination` is given: transmit the sealed artifact, then read it
    back from the host (or fetch the host's stored digest) and re-verify the
    seal end-to-end. `publish()` fails with `E_TRANSIT_ALTERED` if transit
    changed anything — the success return means "sealed, delivered, and
    verified at rest."
+
+**Republishing a loaded artifact.** Readers SHOULD retain the loaded
+seal (data digest, column digests) as session lineage. When `publish()`
+finalizes a table with lineage, it auto-populates `supersedes` and
+compares fresh column digests against the ancestor's. A changed column
+carrying an *unmodified inherited description* is prose the machine
+cannot vouch for — and cannot judge either way: byte change is not
+meaning change (a unit conversion changes every byte while the
+description stays true; a small value correction changes meaning while
+the bytes barely move). Descriptions are therefore NEVER wiped
+automatically; instead, permissive mode publishes with a warning naming
+the affected columns, and strict mode refuses to seal without an
+explicit per-column disposition (rewrite, or explicitly keep). Changes
+made through the checked-plan layer are handled precisely by UnitArrow's
+§5.5 propagation rule; this digest comparison is the coarse safety net
+for modifications made outside it.
 
 `Destination` is an interface, implemented separately from this spec. Its
 required properties are deliberately abstract: storage MUST be **immutable**
@@ -239,13 +264,24 @@ drops the seal; provenance (mode, registry pin) survives per the artifact's prov
   "algorithm": "ed25519",
   "mode": "strict",
   "library_version": "1.4.2",
-  "registry": { "version": "2026.07", "hash": "sha256:..." },
+  "registry": { "name": "core", "version": "2026.07", "hash": "sha256:..." },
+  "composed_from": [ { "name": "oil", "version": "1.4", "hash": "sha256:..." } ],
+  "vocabularies": [ { "name": "cf", "version": "2026.07", "hash": "sha256:..." } ],
   "published_at": "2026-07-28T17:03:00Z",
   "supersedes": "sha256:... (optional: digest of the artifact this one corrects)",
   "data_digest": "sha256:...",
+  "column_digests": { "power": "sha256:...", "site": "sha256:..." },
   "signature": "base64(sign(canonical-JSON of all fields above))"
 }
 ```
+
+`composed_from` is present only when the registry was composed, and omitted
+otherwise — so a seal over an authored registry has exactly the shape it had
+before UnitArrow §7.5 existed. It is signed with the rest of the block, which is
+what lets a verifier recompose the constituents, hash the result, and confirm it
+matches `registry.hash`. Because UnitArrow §7.5 puts each ruling's *reason*
+inside the hashed artifact, that check also covers the stated justifications: a
+seal that verifies is a seal over why each contested symbol means what it does.
 
 ### 5.4 Verification: three states
 
@@ -260,6 +296,17 @@ provenance object — never a boolean:
 
 Unsealed tables are simply *unsealed* — a fourth, neutral display state, not
 an error.
+
+`column_digests` (optional) are computed per column over its data —
+validity and value buffers, canonically serialized — excluding field
+metadata, which the seal signature already covers. On a broken seal,
+verification reports per-column status ("`power` changed; `site` and
+`voltage` byte-identical to the sealed original"), scoping the damage and
+identifying which columns' documentation still describes their data.
+Intact column digests NEVER upgrade a broken seal's overall trust — the
+signature is all-or-nothing; digests only localize. Paired with
+`supersedes`, column digests also yield an automatic what-changed report
+between artifact versions.
 
 When a verified artifact declares `supersedes`, consumers SHOULD surface
 the successor when displaying the superseded artifact's status — a flagged

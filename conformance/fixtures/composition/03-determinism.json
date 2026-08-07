@@ -1,0 +1,128 @@
+{
+  "fixture_version": 1,
+  "category": "composition",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "7.5",
+      "5.6"
+    ]
+  },
+  "description": "The pin is the cross-language contract: same inputs and rulings, same bytes.",
+  "cases": [
+    {
+      "id": "composition.determinism.001",
+      "spec_ref": "\u00a77.5 determinism",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "this deployment is upstream oil production"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "pin": "sha256:2b5b595e1554450d593262cf671f2694f5f635a4ab17a3fb82743692ab13974a"
+      },
+      "rationale": "The exact hash of the effective registry. This is the case that makes \u00a77.5's byte-identical-output requirement testable: an implementation that serializes differently fails here and nowhere else."
+    },
+    {
+      "id": "composition.determinism.002",
+      "spec_ref": "\u00a77.5 determinism",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          },
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "this deployment is upstream oil production"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "pin": "sha256:2b5b595e1554450d593262cf671f2694f5f635a4ab17a3fb82743692ab13974a"
+      },
+      "rationale": "Source ORDER must not affect the pin \u2014 same hash as .001 with the arguments reversed. Otherwise two deployments composing the same registries would disagree about identity for no reason a consumer could see."
+    },
+    {
+      "id": "composition.determinism.003",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "we guessed"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "pin": "sha256:15f0d5588b4d20b0da905c9b93e7313819d3c9510d8e5cb4a85f08bc4af4497b"
+      },
+      "rationale": "Identical units, different reason, DIFFERENT pin. The reasons live inside the hashed artifact, so a seal over the pin covers them: a justification cannot be rewritten without detection."
+    },
+    {
+      "id": "composition.determinism.004",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "ok",
+        "pin": "sha256:6712fa083aff3413f4172e7fd8c696b1bd0289721ded5c93b6f200f611aa8db0"
+      },
+      "rationale": "A single-source composition still has a stable pin \u2014 it is a composed artifact, not a passthrough of the source file."
+    }
+  ]
+}

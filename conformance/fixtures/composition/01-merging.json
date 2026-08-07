@@ -1,0 +1,206 @@
+{
+  "fixture_version": 1,
+  "category": "composition",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "7.5"
+    ]
+  },
+  "description": "Which symbols merge silently, which are contests, and what the union contains.",
+  "cases": [
+    {
+      "id": "composition.merging.001",
+      "spec_ref": "\u00a77.5 rule 1",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "this deployment is upstream oil production"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "agreed": [
+          "m"
+        ],
+        "applied": [
+          "bbl"
+        ],
+        "composed_from": [
+          "oil",
+          "water"
+        ],
+        "resolves": {
+          "m": {
+            "dimension_name": "length",
+            "describes": "metre"
+          }
+        }
+      },
+      "rationale": "Both sources define `m` identically. Agreement is not a contest \u2014 requiring a ruling per shared symbol would make composition unusable."
+    },
+    {
+      "id": "composition.merging.002",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "this deployment is upstream oil production"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "resolves": {
+          "acre_ft": {
+            "dimension_name": "length",
+            "resolvable": true
+          }
+        }
+      },
+      "rationale": "A symbol only one source defines carries into the union untouched."
+    },
+    {
+      "id": "composition.merging.003",
+      "spec_ref": "\u00a77.5 rule 2",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "water",
+            "version": "2.1",
+            "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+          }
+        ],
+        "rulings": [
+          {
+            "symbol": "bbl",
+            "from": "oil",
+            "reason": "this deployment is upstream oil production"
+          }
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "resolves": {
+          "bbl": {
+            "factor": [
+              9938205933,
+              62500000000
+            ],
+            "describes": "oil barrel"
+          }
+        }
+      },
+      "rationale": "The ruling decides which definition survives; the loser is not reachable under any spelling."
+    },
+    {
+      "id": "composition.merging.004",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "ok",
+        "applied": [],
+        "agreed": [],
+        "composed_from": [
+          "oil"
+        ],
+        "resolves": {
+          "bbl": {
+            "describes": "oil barrel"
+          }
+        }
+      },
+      "rationale": "The degenerate case must work: composition is not a separate mode from ordinary loading."
+    },
+    {
+      "id": "composition.merging.005",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID"
+      },
+      "rationale": "Composing nothing has no effective registry to produce."
+    },
+    {
+      "id": "composition.merging.006",
+      "spec_ref": "\u00a77.5",
+      "status": "normative",
+      "input": {
+        "sources": [
+          {
+            "name": "oil",
+            "version": "1.4",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          },
+          {
+            "name": "oil",
+            "version": "9.9",
+            "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\ndisplay = { long = \"metre\" }\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+          }
+        ],
+        "rulings": []
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "oil"
+        ]
+      },
+      "rationale": "Rulings identify constituents by name, so duplicate names would make a ruling ambiguous."
+    }
+  ]
+}

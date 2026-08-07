@@ -1,10 +1,17 @@
 [package]
 name = "unitarrow-core"
-description = "Unit registry, parsing, dimension algebra, and conversion factors for UnitArrow (name reservation; spec in development)"
+description = "Unit registry, parsing, dimension algebra, and conversion factors for UnitArrow"
 readme = "../../README.md"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+# Spec §4: unitarrow-core depends on nothing. The registry TOML subset and the
+# fixture JSON reader are both in-crate for exactly that reason — it keeps the
+# WASM build small (roadmap M1 budgets "tens of KB") and the build offline.
 [dependencies]
+
+[[bin]]
+name = "unitarrow-gen-docs"
+path = "src/bin/gen_docs.rs"

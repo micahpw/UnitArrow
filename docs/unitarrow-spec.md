@@ -1,6 +1,6 @@
 # UnitArrow Specification
 
-**Version:** 0.14.0-draft
+**Version:** 0.21.0-draft
 **Status:** Draft for review
 **Editor:** Micah
 **Extension name:** `unitarrow.quantity.v1`
@@ -65,10 +65,23 @@ Half the value of this spec is what it refuses to do:
   are *commensurable* iff their dimension vectors are equal.
 - **Quantity kind** — a controlled-vocabulary semantic type
   (`cf:air_temperature`, `core:temperature_delta`) carrying behavior rules.
-- **Registry** — the versioned data artifact defining units, dimensions,
-  display forms, and quantity kinds (§7).
-- **Vocabulary** — a namespaced registry fragment contributed by a domain
-  (§7.4).
+- **Registry** — the versioned data artifact defining *measurement itself*:
+  dimensions and units — vectors, factors, offsets, deltas, aliases, display
+  forms (§7). Exactly one is *in force* per deployment, and the `core` registry
+  is PR-gated. It answers: *what is a `MW`, and what is it worth in `W`?*
+- **Effective registry** — the single registry a deployment actually resolves
+  against. Usually an authored registry as-is; where a deployment needs units
+  from several, the artifact produced by composing them under explicit rulings
+  (§7.5). Downstream, nothing distinguishes the two cases: resolution is always
+  one lookup in one artifact.
+- **Ruling** — a composer's decision about a symbol two source registries define
+  differently, naming the winning source and stating why (§7.5). The
+  registry-level analogue is `prefix_collisions` (§7.1).
+- **Vocabulary** — a versioned data artifact defining *domain meaning*:
+  namespace-qualified quantity kinds and their behavior rules (§7.4). Many
+  are loaded per deployment, each on its own release cadence. It answers:
+  *what does this column mean, and what may it be combined with?* A
+  vocabulary MUST NOT define units or dimensions (§7.4).
 - **Tagged / untagged column** — a column with / without the `unitarrow.quantity.v1`
   extension.
 - **Tainted** — a value or column whose unit is unknown because untagged data
@@ -116,10 +129,19 @@ ARROW:extension:metadata  = <UTF-8 JSON, §5.2>
 types (`int8..int64`, `uint8..uint64`).
 
 **Cast rule (normative):** converting a column whose storage is an integer or
-decimal type MUST either (a) promote storage to `float64`, or (b) fail with
-`E_CAST_LOSSY` if the caller requested storage preservation. Silent lossy
-integer conversion is forbidden. Null validity is orthogonal to units and is
-preserved untouched by all operations in this spec.
+decimal type is governed by a caller-selected storage policy:
+
+- `promote` (the default) — the result storage is `float64`;
+- `preserve` — storage is kept; the conversion succeeds only when it is exact
+  and overflow-free (an integer rescale by a whole factor, a decimal rescale
+  by a power of ten), and fails with `E_CAST_LOSSY` otherwise;
+- `preserve` with a declared tolerance — storage is kept; the conversion
+  succeeds when every value's rounding error is within the tolerance,
+  emitting `W_CAST_LOSSY`, and fails with `E_CAST_LOSSY` otherwise.
+  Tolerance semantics are an open question (§12).
+
+Silent lossy conversion is forbidden under every policy. Null validity is
+orthogonal to units and is preserved untouched by all operations in this spec.
 
 **Nested types (reserved, normative):**
 
@@ -152,6 +174,15 @@ preserved untouched by all operations in this spec.
 
 Unknown keys MUST be preserved on round-trip and ignored otherwise.
 
+The `unit` value — and every other unit-valued field, such as `base.unit` —
+MUST be written without JSON escape sequences: a `\` anywhere in the raw
+token is `E_BAD_METADATA`, detected at the metadata layer before the unit
+grammar applies. Every character permitted in a unit string (§6.1) is
+representable literally in JSON, so this constrains encoding, never
+expression. Canonical form (§6.3) fixes one spelling per unit expression;
+this rule fixes one byte sequence per spelling, which is what data digests
+and cross-language hashing actually require.
+
 ### 5.3 Untagged columns and `unknown`
 
 The absence of the extension is the *untracked* state — it is legal, silent by
@@ -170,14 +201,38 @@ Because the base is column-uniform, columns whose base varies per row (e.g.
 voltage p.u. across voltage levels) are out of scope (§2) and MUST be shipped
 as physical units.
 
-### 5.5 Display name
+### 5.5 Display name and description
 
-A human-facing column name travels as a *plain* field-metadata key, outside
-the extension blob, because it is producer knowledge, not registry knowledge:
+Human-facing documentation travels as *plain* field-metadata keys, outside
+the extension blob, because it is producer knowledge, not registry
+knowledge:
 
 ```
 unitarrow:display_name = "Ambient Temperature"
+unitarrow:description  = "2m air temperature at the site met station; QC'd per ..."
 ```
+
+A schema-level `unitarrow:description` documents the table as a whole.
+Together these make a tagged table self-documenting — the data dictionary
+rides inside the artifact instead of in a sidecar document. Descriptions
+are free prose for humans and MUST NOT be used for validation; they are
+paragraphs, not documents — longer material belongs behind a link.
+Transformations carry a column's description only when the column passes
+through unchanged; derived columns (converted, integrated, renamed) get no
+description unless one is explicitly authored — honest emptiness over
+stale prose. For sealed tables the Provenance Companion makes staleness
+*detectable*: any data change breaks the seal (and its optional
+column-level digests identify which columns' descriptions no longer
+describe their data), and its republish flow requires a disposition for
+descriptions inherited onto changed columns.
+
+Schema-level `unitarrow:references` holds external documentation the
+file itself should not carry — a methodology PDF, a companion dataset —
+as a list of `{url, description, digest?}` entries. The optional digest
+makes the referenced document tamper-evident (a swapped PDF no longer
+matches); it cannot cure link rot, so durable identifiers (DOIs,
+archived URLs) are RECOMMENDED. References are for material that
+genuinely cannot live inline, not an escape hatch from the size norm.
 
 Machine identity is the Arrow field name itself. Clients SHOULD build axis
 labels as `display_name (unit-display-form)`, falling back to a prettified
@@ -187,12 +242,105 @@ name — never on `display_name` string matching.
 ### 5.6 Schema-level provenance block
 
 Table-level claims live in schema metadata under `unitarrow:provenance`
-(JSON): `mode`, `library_version`, `registry` (version + content hash),
-and `published_at`. Merging tables merges provenance downward: the
-result's mode is the *weakest* of the inputs (`strict` > `permissive` >
-`untracked`). Sealing this block — signing it and binding it to the data
-— is the Provenance Companion's job (§9); a seal never survives any
-transformation.
+(JSON):
+
+| Key | Meaning |
+|---|---|
+| `mode` | the checking level claimed (§8.4) |
+| `library_version` | the implementation that made the claim |
+| `registry` | `{name, version, hash}` of the **effective registry** (§7.5), optionally plus `source` |
+| `composed_from` | present iff the effective registry was composed: a list of `{name, version, hash}`, one per constituent |
+| `vocabularies` | a list of `{name, version, hash}` covering every vocabulary loaded when the claim was made |
+| `published_at` | RFC 3339 timestamp |
+
+`vocabularies` is a list because a checked-at-a-stated-registry claim is not
+reproducible without every artifact it ran against. `composed_from` exists for
+exactly the same reason and MUST be present whenever the effective registry was
+composed: a consumer holding the constituents can recompose, hash the result,
+and compare it to `registry.hash` — so a reconciliation is a *computation the
+consumer can repeat*, not a claim they must accept.
+
+`registry` names the effective registry, singular, even when `composed_from`
+lists several. Resolution is therefore always one lookup in one artifact, and
+canonical form (§6.3) remains an equality primitive within a table.
+
+#### Embedding modes
+
+`registry.source` carries the effective registry's bytes. Publishers choose
+whether to include it:
+
+| Mode | `registry.source` | Resolves with no network | Survives the constituents disappearing |
+|---|---|---|---|
+| **full** | present | yes | **yes** |
+| **pin** | absent | no | no |
+
+The two modes trade **availability, not integrity.** Both carry
+`registry.hash`, so an implementation MUST verify a fetched registry against it
+and MUST refuse to resolve against a mismatch. Neither mode can silently
+resolve against the wrong registry; only **full** can still resolve when the
+right one is no longer retrievable. A bare URL provides neither guarantee and
+MUST NOT be used in place of the hash.
+
+Choose by deployment shape. A published dataset with a long shelf life SHOULD
+use **full**: the cost is kilobytes against a file that is typically many
+megabytes, and link rot is the expected failure for archived data rather than an
+exotic one. A pipeline emitting very many small files MAY use **pin**, where
+per-file duplication dominates. Implementations MUST NOT assume the duplication
+compresses away: identical blocks in sibling files are invisible to per-entry
+compression (a ZIP member, a Parquet metadata block) regardless of window size,
+and deduplicate only in a solid stream whose compression window exceeds the
+distance between copies.
+
+#### Merging
+
+Merging tables merges provenance downward: the result's mode is the *weakest*
+of the inputs (`strict` > `permissive` > `untracked`), and `composed_from` and
+`vocabularies` merge as unions keyed on `(name, version, hash)`.
+
+#### Reading across a registry boundary
+
+Canonical form (§6.3) is **registry-relative**: `bbl` canonicalizes to `"bbl"`
+in every registry defining it, whatever factor it carries. Because `registry` is
+pinned per table, two tables can carry equal canonical forms that denote
+different quantities. An implementation MUST NOT rely on canonical-form equality
+across differing pins without the check below.
+
+When a table's `registry.hash` differs from the reader's effective registry:
+
+1. Take the **distinct unit symbols the incoming schema uses** — not every
+   symbol either registry defines.
+2. Resolve each in both registries, following aliases and derived prefixed forms
+   (§7.2).
+3. They agree only if **dimension, factor, and offset** all match. Offset is
+   part of the test: an affine scale whose zero moved has an unchanged factor
+   and is wrong at every value.
+
+Symbols compared per pin comparison — never per row or per element.
+
+| Outcome | `strict` | `permissive` |
+|---|---|---|
+| pins equal | proceed, nothing checked | proceed |
+| every symbol agrees | proceed | proceed |
+| a symbol's dimension differs | `E_DIM_MISMATCH` | taint, one warning |
+| a symbol's factor or offset differs | `E_UNIT_MISMATCH` | taint, one warning |
+| a symbol does not resolve locally | `E_UNKNOWN_UNIT` | taint, one warning |
+| the source registry is unobtainable | `E_REGISTRY_INVALID` | taint, one warning |
+
+Symbols rather than pins, deliberately: comparing pins would reject every
+registry version bump, and a bump that does not touch the units in play is the
+common case. The symbol check is exact where it matters and silent where it is
+not.
+
+The last row is the cost of §5.6's **pin** embedding mode. An implementation
+MUST NOT treat an unobtainable source registry as agreement — *could not check*
+and *checked and agreed* are different claims, and conflating them reintroduces
+precisely the silence this rule removes.
+
+A diagnostic SHOULD report the ratio between the two readings, not merely that
+they differ: the actionable form is *values differ by 33%*.
+
+Sealing this block — signing it and binding it to the data — is the Provenance
+Companion's job (§9); a seal never survives any transformation.
 
 ---
 
@@ -201,21 +349,39 @@ transformation.
 ### 6.1 Grammar (v1)
 
 ```
-unit-string  = term *( ("*" / "/") term ) | "1"
+unit-string  = product / inverse / "1"
+product      = term *( ( "*" / "/" ) term )
+inverse      = "1" 1*( "/" term )
 term         = symbol [ "^" integer ]
-symbol       = registry-resolved identifier (case-sensitive)
+symbol       = ALPHA *( ALPHA / DIGIT / "_" / "@" )
+integer      = [ "-" ] ( "0" / ( NZDIGIT *DIGIT ) )
+NZDIGIT      = %x31-39
 ```
 
-- No parentheses; division binds left-to-right (`a/b/c` = `a·b⁻¹·c⁻¹`).
+- Symbols are ASCII and case-sensitive (`mW` ≠ `MW`). Display forms (`°C`)
+  are output-only and are never parsed; a character outside the class is
+  `E_UNIT_SYNTAX`.
+- No whitespace anywhere, including leading and trailing — rejected, never
+  trimmed. The empty string is invalid and is **not** equivalent to `"1"`.
+- No parentheses; division binds left-to-right (`a/b/c` = `a·b⁻¹·c⁻¹`). `/`
+  is input notation only: canonical form renders signs inside exponents
+  (§6.3).
+- A negative exponent after `/` (`MW/s^-1`) is invalid — a double negative
+  that almost always spells a typo.
+- The literal `1` is legal only as the whole string or as the head of an
+  `inverse` (`1/s`, `1/K/m^2`); `1*MW` is invalid.
+- Exponents are written without `+`, without leading zeros, and without
+  `-0`; `^0` and `^1` are legal input and normalize away (§6.3).
 - No numeric prefixes or scale factors inside strings (`0.5*MW` is invalid);
   prefixed units (`kW`, `GBtu`) are distinct registry entries.
-- Rational exponents are **excluded from grammar v1** (open question §12).
+- Rational exponents and namespaced symbols are **excluded from grammar v1**
+  (open questions §12; both change term syntax and would migrate together).
 
 ### 6.2 Dimensions
 
-A dimension is a vector of signed 8-bit integer exponents over the **base
+A dimension is a vector of signed 8-bit integer exponents over the **ten base
 dimensions**: the SI seven (`length`, `mass`, `time`, `current`,
-`temperature`, `amount`, `luminosity`) plus `count` and `currency`.
+`temperature`, `amount`, `luminosity`) plus `count`, `currency`, and `angle`.
 Everything else is a **named derived dimension** — a registry alias for a
 specific vector. Energy is not a base dimension; it is
 `{mass: 1, length: 2, time: -2}`, and power is the same with `time: -3`.
@@ -225,17 +391,51 @@ defined against different dimension names still compare equal if their
 vectors are equal. Multiplication adds vectors, division subtracts,
 addition/comparison requires equality.
 
+#### Why `angle` is a base dimension
+
+SI makes the radian dimensionless (`rad = m/m`). This specification does not,
+for the same reason `count` and `currency` are already base dimensions here and
+are not SI base quantities: the dimension vector serves engineering checking,
+not SI conformance. A count is a pure number in SI too, and was separated so
+that a tally cannot be added to a ratio.
+
+With a dimensionless radian, `rad/s` and `Hz` both reduce to `{time: -1}`. They
+are then commensurable, and an implementation will offer a conversion between
+angular frequency and frequency at a factor of 1 — when the relationship is
+`ω = 2πf`. The error is 6.28×, and no dimensional check can see it. Separating
+`angle` makes the two incommensurable, so the mistake becomes
+`E_DIM_MISMATCH` rather than a silent rescale.
+
+Angles remain interconvertible with each other: `deg` and `rad` share
+`{angle: 1}`. The separation is from *dimensionless*, not from one another. An
+angle divided by an angle is dimensionless, exactly as any base dimension
+cancels.
+
+Implementations MUST NOT treat `angle` as an optional extension: a registry
+that defines the radian as dimensionless produces different commensurability
+answers, which is a different type system.
+
 ### 6.3 Canonical form (normative)
 
 Cross-language equality and hashing require one spelling per unit expression:
 
-1. Resolve every symbol against the registry (aliases → canonical symbol).
+1. Resolve every symbol against the registry (aliases → canonical symbol,
+   §7.2).
 2. Merge repeated symbols by summing exponents; drop zero exponents.
-3. Serialize as a single product: negative exponents rendered with `/`,
-   positive-exponent terms sorted lexicographically by symbol, then
-   negative-exponent terms sorted lexicographically after all `/` terms;
-   exponent `1` is omitted.
+3. Serialize as a single `*`-joined product: positive-exponent terms first,
+   then negative-exponent terms, each group sorted ascending by bytewise
+   comparison of the UTF-8 encoding of the symbol. A term renders as
+   `symbol` when its exponent is 1 and `symbol^exponent` otherwise, with the
+   sign inside the exponent — canonical form contains no `/`. Examples:
+   `W*K^-1*m^-2`, `MW*s^-1`, `USD*MWh^-1`; a pure inverse is `s^-1`.
 4. The empty product serializes as `"1"`.
+
+Canonicalization normalizes *spelling*, never the producer's choice of unit:
+`MW*h` and `MWh` are both canonical and are not equal, though they are
+commensurable and numerically identical (§1 goal 4). Two units are equal iff
+their canonical strings are identical. Human-readable rendering (`W/m²·K`)
+is the display layer's concern (§5.5, §7.2 display forms), never canonical
+form's.
 
 Writers MUST emit canonical form. Readers MUST accept non-canonical input in
 `permissive` mode (normalizing internally, tainting nothing) and MUST reject
@@ -245,7 +445,18 @@ unresolvable symbols in `strict` mode (`E_UNKNOWN_UNIT`).
 
 Units MAY define an offset (e.g. `degC`, `degF`). Affine units:
 
-- convert as `y = (x + offset_from) * factor - offset_to` between each other;
+- convert between each other through the dimension's base unit:
+
+  ```
+  base = x * factor_from + offset_from
+  y    = (base - offset_to) / factor_to
+  ```
+
+  `offset` is an exact rational expressed **in the dimension's base unit**
+  (kelvin, for temperature), so offsets are directly comparable across units
+  of one dimension. A unit without an `offset` has offset 0 and is not
+  affine. Check: 100 °C → 100·1 + 273.15 = 373.15 K →
+  (373.15 − 45967/180) / (5/9) = 212 °F;
 - are **non-composable**: any compound expression containing an affine unit is
   invalid (`E_AFFINE_COMPOUND`);
 - pair with a *delta* counterpart (`delta_degC`) that is purely
@@ -267,9 +478,14 @@ library release (the tzdata model). Format: TOML.
 ```toml
 [registry]
 schema_version = 1
+name = "core"          # required, [a-z0-9-]+ — the artifact's identity for pinning
 version = "2026.07"
 # content hash is computed over the canonicalized file, not stored in it
 ```
+
+Every pin of a registry or vocabulary — the provenance block (§5.6), a
+companion seal — carries `name`, `version`, and content hash together; a
+version without a name identifies nothing.
 
 ### 7.2 Units
 
@@ -288,22 +504,67 @@ display = { unicode = "MW", long = "megawatt", plural = "megawatts" }
 [unit.degC]
 dimension = "temperature"
 factor = [1, 1]
-offset = [27315, 100]          # exact rational offset to kelvin
+offset = [27315, 100]          # exact rational offset, in kelvin (§6.4)
 delta = "delta_degC"
-display = { unicode = "°C", latex = "^{\\circ}C", ascii = "degC",
-            long = "degree Celsius" }
+aliases = ["degreeC"]          # input-only spellings; never emitted
+display = { unicode = "°C", latex = "^{\\circ}C", ascii = "degC", long = "degree Celsius" }
+
+[unit.degF]
+dimension = "temperature"
+factor = [5, 9]
+offset = [45967, 180]          # 255.372… — in kelvin, NOT 459.67 (§6.4)
+delta = "delta_degF"
+display = { unicode = "°F", ascii = "degF", long = "degree Fahrenheit" }
+
+[unit.rad]
+dimension = "angle"
+factor = [1, 1]
+display = { unicode = "rad", long = "radian", plural = "radians" }
+
+[unit.deg]
+dimension = "angle"
+factor = [1, 180]
+pi = 1                         # exact: deg = (1/180)·π rad, never a decimal
+display = { unicode = "°", ascii = "deg", long = "degree", plural = "degrees" }
 
 [unit.household_yr]
 dimension = "energy"
 factor = [812394005, 10]       # example — derived from 77 MMBtu (IT)
-provenance = { source = "EIA RECS 2020", scope = "US average",
-               note = "site energy, electricity + gas" }
+provenance = { source = "EIA RECS 2020", scope = "US average", note = "site energy, electricity + gas" }
 variants = ["household_yr@CO", "household_yr@TX"]
 ```
 
 Conversion factors and offsets are **exact rationals** (`[numerator,
 denominator]`), computed to floats only at the final step — this is what makes
 factors auditable and cross-language identical.
+
+#### The `pi` exponent
+
+`pi` is an optional integer exponent of **π** applied to `factor`, defaulting to
+`0`. It exists because a degree is `(π/180)` radians and π is irrational: no
+`[numerator, denominator]` pair is the degree's factor, so without this a
+registry would store a rounding and present it as a definition — the precise
+failure exact rationals exist to prevent.
+
+With it the definition is exact. `deg = (1/180)·π¹ rad` composes, inverts, and
+raises to a power losslessly; 180 degrees is π radians exactly, and a
+degree→radian→degree round trip is the identity rather than merely close. π
+reaches a float only where every other factor does, at application.
+
+Implementations MUST support `pi`, and MUST reject an exponent outside
+`-8..=8` — a unit needing more is a modelling error, not a unit. A conversion
+whose composed π exponent is non-zero has **no exact rational form**; an API
+returning exact rationals MUST report that rather than round.
+
+Only `factor` takes `pi`. `offset` does not: affine units are temperature
+scales, whose intercepts are rational.
+
+`aliases` lists additional input-only spellings that resolve to the entry's
+canonical symbol (§6.3 step 1). Aliases are symbols and share their ASCII
+lexical class (§6.1). Across the union of loaded artifacts, an alias MUST NOT
+equal any canonical symbol or any other alias, and a canonical symbol MUST
+NOT be defined twice; each violation is a load-time error
+(`E_REGISTRY_INVALID`). Aliases are never emitted.
 
 ### 7.3 Quantity kinds
 
@@ -342,10 +603,18 @@ inference engine.
 
 The registry format is federated from day one:
 
-- Every vocabulary file declares a **namespace prefix**; every term is
-  namespace-qualified (`core:power`, `cf:air_temperature`,
+- Every vocabulary file declares a **namespace prefix**; every quantity kind
+  is namespace-qualified (`core:power`, `cf:air_temperature`,
   `hydro:streamflow`). A deployment's effective ontology is the union of the
   vocabulary artifacts it loads; prefix collisions are a load-time error.
+- **Vocabularies define quantity kinds only.** Units and dimensions are
+  defined solely by the registry — one per deployment, PR-gated — because a
+  unit definition carries a conversion factor every consumer silently
+  trusts. A vocabulary declaring `[unit.…]` or `[dimension.…]` fails to load
+  (`E_REGISTRY_INVALID`). Unit symbols are global and unnamespaced in
+  grammar v1; a symbol or alias defined twice across loaded artifacts is a
+  load-time error, symmetric with prefix collisions. Namespaced unit symbols
+  are deferred to grammar v2 (§12).
 - **Only two things are PR-gated** in the main repository: this registry
   *schema* and the `core:` namespace (units, dimensions, and genuinely
   cross-domain quantities). Domain vocabularies live in their own
@@ -362,6 +631,77 @@ The registry format is federated from day one:
 - The `cf:` namespace is generated from the published CF standard-name table
   rather than hand-minted; domain vocabularies extend rather than compete
   with it.
+
+### 7.5 Composing registries
+
+§7.4 restricts unit definitions to a single registry. A deployment needing
+units from two domains therefore composes them into one **effective registry**,
+which is what everything downstream resolves against.
+
+**Composition happens before computation.** It is not a description of a
+computation already performed. If a pipeline computed first and recorded the
+registries afterwards, an output table could carry two columns with the same
+canonical form denoting different quantities — and §6.3 would cease to be an
+equality primitive *within a single table*, which is the one place it must hold
+unconditionally.
+
+A composition takes a set of **sources** — registries with distinct names — and
+a set of **rulings**. Loading it:
+
+1. A symbol several sources define **identically** is not a contest. (`m` is
+   `m` everywhere; requiring a ruling for every shared symbol would make
+   composition unusable.)
+2. A symbol two sources define **differently** MUST have a ruling naming the
+   winning source and giving a **non-empty reason**. Absent one, composition
+   fails (`E_REGISTRY_INVALID`) naming the symbol and every source defining it.
+3. A ruling whose named source does not define the symbol is an error.
+4. A ruling that settles no contest is an error, symmetric with §7.1's
+   `prefix_collisions`: a stale entry would hide the next real contest.
+5. Each source's `prefix_collisions` (§7.1) carry forward — they are rulings
+   their authors made, and dropping them would fail the load.
+6. The result MUST itself be a valid registry; composition cannot emit
+   something unloadable.
+
+The reason is required for the same purpose as `prefix_collisions`' reason, one
+level up, and for a second party: the consumer of a published table has no other
+place to learn *why* a contested symbol means what it does.
+
+The effective registry carries its own provenance — the constituents under
+`[registry.composed_from.<name>]`, and the rulings under
+`[registry.reconciliation.<symbol>]` with `from` and `reason`:
+
+```toml
+[registry]
+name = "merged"
+schema_version = 1
+version = "2026.07"
+
+[registry.composed_from.oil]
+hash = "sha256:f9e651ecd5a67356…"
+version = "1.4"
+
+[registry.composed_from.water]
+hash = "sha256:015960d3b7d632ac…"
+version = "2.1"
+
+[registry.reconciliation.bbl]
+from = "oil"
+reason = "this deployment is upstream oil production, not water management"
+```
+
+Note the key order — `name` before `schema_version` before `version`, `hash`
+before `version`, `from` before `reason`. That is the ascending-byte-order rule
+above, not a stylistic choice: it is what makes the hash reproducible.
+
+**Serialization MUST be deterministic.** A composed registry has no authored
+file, so its identity is the hash of its generated bytes, and two conforming
+implementations composing the same sources with the same rulings MUST produce
+byte-identical output. Keys are emitted in ascending byte order at every level,
+scalars precede sub-tables within a table, and no other ordering is permitted.
+
+Because the rulings live *inside* the hashed artifact, changing a reason changes
+the hash — so a seal over the pin (§9) covers the reasoning transitively, and a
+justification cannot be rewritten without detection.
 
 ---
 
@@ -388,7 +728,9 @@ reading, and passing through untagged tables is silent everywhere.
 
 Concatenating or unioning columns with the same name:
 
-- identical canonical units → result keeps the unit;
+- identical canonical units **and the same registry pin** → result keeps the
+  unit. Across differing pins the boundary check of §5.6 applies first, and its
+  outcome governs;
 - commensurable but different units → `strict`: error `E_UNIT_MISMATCH`;
   `permissive`: coerce the *second and subsequent* inputs to the first
   input's unit, with one warning;
@@ -480,17 +822,20 @@ types but preserve the code.
 
 | Code | Raised when |
 |---|---|
+| `E_UNIT_SYNTAX` | Unit string does not parse under the declared grammar (§6.1) |
 | `E_UNKNOWN_UNIT` | Symbol does not resolve against the loaded registry (strict) |
 | `E_DIM_MISMATCH` | Add/compare/concat across incommensurable dimensions |
-| `E_UNIT_MISMATCH` | Strict-mode concat/join across commensurable but different units |
+| `E_UNIT_MISMATCH` | Strict-mode concat/join across commensurable but different units, including two registries that disagree about a symbol's factor or offset (§5.6) |
 | `E_AFFINE_COMPOUND` | Affine unit inside a compound expression |
 | `E_INTERVAL_MISUSE` | Absolute unit on an `interval: true` quantity kind (or vice versa) |
 | `E_BASE_MISSING` / `E_BASE_MISMATCH` | `pu` without base; p.u. arithmetic across different bases |
-| `E_CAST_LOSSY` | Conversion requires lossy storage change and promotion was refused |
+| `E_CAST_LOSSY` | Conversion would lose precision under the requested storage policy (§5.1) |
 | `E_BAD_PLACEMENT` | Unit on an invalid nesting position (§5.1) |
 | `E_KIND_UNSUMMABLE` | Aggregation across quantity kinds not `summable_with` |
 | `E_TEMPORAL_MISMATCH` | §8.5 violations: summing a rate over rows, mixing instant/interval, differing periods |
 | `E_GRAMMAR_VERSION` | Wire `grammar` newer than implementation supports |
+| `E_BAD_METADATA` | Extension metadata absent, not valid UTF-8 or JSON, missing a required key, or containing an escape sequence in a unit-valued field (§5.2) |
+| `E_REGISTRY_INVALID` | A loaded registry or vocabulary artifact violates a load-time validation rule (§7.2, §7.4), or a composition is unresolvable — an unruled contest, a stale or misdirected ruling, a missing reason (§7.5) |
 
 Warnings mirror the codes (`W_TAINT_INTRODUCED`, `W_COERCED`, …).
 
@@ -517,7 +862,34 @@ without modification to the golden files.
 Companion-scope questions (plans, seals, advisories, reproduction) are
 tracked in the Provenance Companion §10.
 
-- **Rational exponents** in grammar v2 (signal-processing units).
+- **Grammar v2 term syntax** — three pending changes all alter what a `term`
+  may contain, and each migration rewrites every stored unit string, so they
+  should land together rather than in three bumps:
+  1. **rational exponents** (`m^1/2`, signal-processing units);
+  2. **namespaced unit symbols** (`hydro:acre_ft`), so a domain vocabulary can
+     mint units without colliding globally;
+  3. a **prefix separator** (`k:W`), which would make prefix/authored-symbol
+     collisions impossible by construction instead of by load-time check —
+     at the cost of a canonical form nobody recognises.
+
+  Items 2 and 3 both want `:`. That parses without a second separator —
+  namespace prefixes are lowercase (§7.4), so reserving the fifteen lowercase
+  SI prefix symbols (`a c d da f h k m n p q r u y z`) makes `X:Y`
+  deterministic, and none of `core`, `cf`, `hydro`, `cim` is affected. But
+  parsing is a lower bar than reading: `:` already means *namespace membership*
+  in quantity-kind CURIEs, and reusing it for *scale composition* gives one
+  character two jobs in the same document. If both ship, they should use
+  different separators — `:` for namespaces, `.` for prefixes (`k.W`).
+
+  Whether either is still needed is the prior question. §7.4 now restricts unit
+  definitions to the single PR-gated registry, which largely retires item 2's
+  motivation; item 3 duplicates a guarantee §7.2's load-time collision check
+  already provides, at the cost of a canonical form nobody recognises. Dropping
+  item 3 leaves `:` with exactly one meaning, which is the most usable outcome
+  of the three.
+- **Tolerance semantics** for storage-preserving casts (§5.1): absolute vs
+  relative, per-value vs aggregate, and whether a tolerance used should be
+  recorded in provenance.
 - **Uncertainty** — activate the reserved `struct{value, stderr}` layout;
   correlated-error semantics are explicitly out of scope even then.
 - **CIM identity binding** — field-level object identities

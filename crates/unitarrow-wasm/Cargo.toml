@@ -1,10 +1,16 @@
 [package]
 name = "unitarrow-wasm"
-description = "WebAssembly bindings for unitarrow-core (name reservation; spec in development)"
+description = "WebAssembly bindings for unitarrow-core"
 readme = "../../README.md"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# Spec §4: this crate wraps unitarrow-core only. arrow-rs never enters the WASM
+# build; arrow-js owns table handling on the JS side.
 [dependencies]
+unitarrow-core = { path = "../unitarrow-core" }

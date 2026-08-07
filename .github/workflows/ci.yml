@@ -1,0 +1,130 @@
+name: CI
+
+# The docs workflow proves the site builds. This one proves the thing the site
+# describes still works: the conformance suite a binding must pass unmodified,
+# and the document invariants that have each drifted at least once.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Tests and lints
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add the wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # The whole suite: unit tests, the golden conformance files, the
+      # composition cases, and the repository invariants.
+      - name: cargo test
+        run: cargo test --workspace --all-targets
+
+      # Doctests are excluded by --all-targets, and the crate's usage example
+      # lives in one.
+      - name: cargo test --doc
+        run: cargo test --workspace --doc
+
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: cargo fmt
+        run: cargo fmt --all --check
+        continue-on-error: true
+
+      # §4 budgets the browser module at "tens of KB" and requires no_std. A
+      # host-only build would not catch a std leak.
+      - name: Build for wasm32-unknown-unknown
+        run: cargo build -p unitarrow-wasm --target wasm32-unknown-unknown --release
+
+      - name: Report the wasm size
+        run: |
+          f=target/wasm32-unknown-unknown/release/unitarrow_wasm.wasm
+          printf 'wasm: %s bytes raw, %s gzipped\n' \
+            "$(wc -c < $f)" "$(gzip -9 -c $f | wc -c)"
+
+  fixtures:
+    name: Fixture schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install a JSON Schema validator
+        run: pip install jsonschema==4.23.0
+
+      # schema/fixture.schema.json is the normative machine-checkable form of
+      # the fixture format. It has been out of date once already: it lacked
+      # E_REGISTRY_INVALID, so composition fixtures using a real §10 code failed
+      # validation while passing their runner.
+      - name: Validate every fixture against the schema
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          from jsonschema import Draft202012Validator
+          schema = json.load(open("conformance/schema/fixture.schema.json"))
+          Draft202012Validator.check_schema(schema)
+          v = Draft202012Validator(schema)
+          files = sorted(pathlib.Path("conformance/fixtures").rglob("*.json"))
+          assert files, "no fixtures found"
+          cases = failed = 0
+          for f in files:
+              doc = json.load(open(f))
+              cases += len(doc["cases"])
+              for e in v.iter_errors(doc):
+                  failed += 1
+                  print(f"{f}: {'/'.join(map(str, e.path))}: {e.message}")
+          print(f"{len(files)} files, {cases} cases")
+          sys.exit(1 if failed else 0)
+          PY
+
+  generator:
+    name: Docs generator
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # Every page on the site is produced by running the implementation, so a
+      # generator that panics is a broken build even when the crate compiles.
+      # It must also be deterministic: the same tree twice must give the same
+      # bytes, or "regenerate and diff" stops being a usable review step.
+      - name: Generate, then generate again, and compare
+        run: |
+          cargo run -p unitarrow-core --bin unitarrow-gen-docs
+          find docs/generated -name '*.md' | sort | xargs sha256sum > /tmp/first
+          cargo run -p unitarrow-core --bin unitarrow-gen-docs
+          find docs/generated -name '*.md' | sort | xargs sha256sum > /tmp/second
+          diff /tmp/first /tmp/second || {
+            echo "::error::the docs generator is not deterministic"
+            exit 1
+          }
+          echo "generator is deterministic across $(wc -l < /tmp/first) pages"

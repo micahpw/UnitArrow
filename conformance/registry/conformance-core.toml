@@ -1,0 +1,267 @@
+#
+# conformance-core — FIXTURE REGISTRY, NOT THE SHIPPING CORE REGISTRY.
+#
+# The symbol set the parsing fixtures resolve against. It exists so §6.3
+# fixtures are self-contained and runnable the moment `unitarrow-core` can load
+# a registry, and it is deliberately tiny: enough units to exercise every
+# canonical-form rule, and nothing else. The real `core:` registry lands at M1
+# (roadmap M1: "base registry (SI + common energy units + household_yr as the
+# contextual-unit exemplar)") and is a separate, PR-gated artifact.
+#
+# Do not copy factors out of this file into the shipping registry without
+# re-deriving them. The AFFINE UNITS block encodes the RESOLVED AMB-016
+# convention (offsets in the dimension's base unit); see the note there.
+#
+# Symbols were chosen so that bytewise collation (AMB-003) is observable:
+#   Btu < J < K < MW < MWh < USD < W < degC < degF < delta_degC
+#       < delta_degF < h < kW < m < mW < pu < s
+# Under a case-folding collation this order changes, and so does every
+# canonical string that mixes cases — which is the point of pinning it.
+#
+
+[registry]
+schema_version = 1
+version = "0.1.0"
+
+# `name` is NOT in spec §7.1, which gives registries a version but no identity.
+# Fixtures need to name the registry they resolve against, and §5.6 pins
+# registries by "version + content hash" — two unrelated registries both at
+# "2026.07" are indistinguishable without this. See AMB-026.
+name = "conformance-core"
+
+
+# ---------------------------------------------------------------------------
+# Dimensions
+#
+# The nine base dimensions of §6.2 are implicit; only derived dimensions are
+# declared here. `dimensionless` is declared explicitly so `[unit.pu]` has
+# something to reference — the empty vector, which is what `"1"` denotes.
+# ---------------------------------------------------------------------------
+
+[dimension.dimensionless]
+vector = {}
+
+[dimension.length]
+vector = { length = 1 }
+
+[dimension.time]
+vector = { time = 1 }
+
+[dimension.temperature]
+vector = { temperature = 1 }
+
+[dimension.currency]
+vector = { currency = 1 }
+
+[dimension.angle]
+vector = { angle = 1 }
+
+[dimension.frequency]
+vector = { time = -1 }
+
+[dimension.angular_frequency]
+vector = { angle = 1, time = -1 }
+
+[dimension.energy]
+vector = { mass = 1, length = 2, time = -2 }
+
+[dimension.power]
+vector = { mass = 1, length = 2, time = -3 }
+
+
+# ---------------------------------------------------------------------------
+# Simple units
+#
+# `factor` is the exact rational scaling to the dimension's base unit:
+#   m (length), s (time), K (temperature), J (energy), W (power), USD (currency)
+# ---------------------------------------------------------------------------
+
+[unit.m]
+dimension = "length"
+factor = [1, 1]
+display = { unicode = "m", long = "metre", plural = "metres" }
+
+[unit.s]
+dimension = "time"
+factor = [1, 1]
+display = { unicode = "s", long = "second", plural = "seconds" }
+
+[unit.h]
+dimension = "time"
+factor = [3600, 1]
+aliases = ["hr"]
+display = { unicode = "h", long = "hour", plural = "hours" }
+
+[unit.W]
+dimension = "power"
+factor = [1, 1]
+display = { unicode = "W", long = "watt", plural = "watts" }
+
+# mW and MW differ only by case. §6.1 makes symbols case-sensitive, so these
+# are distinct units three orders of magnitude apart in opposite directions —
+# the reason AMB-003's collation question is not cosmetic.
+[unit.mW]
+dimension = "power"
+factor = [1, 1000]
+display = { unicode = "mW", long = "milliwatt", plural = "milliwatts" }
+
+[unit.kW]
+dimension = "power"
+factor = [1000, 1]
+display = { unicode = "kW", long = "kilowatt", plural = "kilowatts" }
+
+[unit.MW]
+dimension = "power"
+factor = [1000000, 1]
+display = { unicode = "MW", long = "megawatt", plural = "megawatts" }
+
+[unit.J]
+dimension = "energy"
+factor = [1, 1]
+display = { unicode = "J", long = "joule", plural = "joules" }
+
+# MWh exists alongside MW and h specifically to make AMB-012 testable:
+# `MW*h` and `MWh` are commensurable, numerically identical, and *different*
+# canonical strings. Canonicalization normalizes spelling, never unit choice.
+[unit.MWh]
+dimension = "energy"
+factor = [3600000000, 1]
+display = { unicode = "MWh", long = "megawatt hour", plural = "megawatt hours" }
+
+# Btu (International Table) = 1055.05585262 J exactly, by definition
+# (cal_IT = 4.1868 J exactly). Written as an exact rational, reduced:
+#   105505585262 / 100000000  ->  52752792631 / 50000000
+# Roadmap M1's exit criterion is answering the IT-vs-thermochemical Btu
+# question *in the registry*; this fixture registry carries only the IT
+# variant and takes no position on the canonical symbol for either.
+[unit.Btu]
+dimension = "energy"
+factor = [52752792631, 50000000]
+aliases = ["Btu_IT"]
+display = { unicode = "Btu", long = "British thermal unit (IT)", plural = "British thermal units (IT)" }
+
+[unit.USD]
+dimension = "currency"
+factor = [1, 1]
+display = { unicode = "USD", long = "US dollar", plural = "US dollars" }
+
+# `pu` is dimensionless here, NOT a dimension of its own. AMB-022 originally
+# proposed a dedicated per-unit dimension so a p.u. column could never unify
+# with a plain `"1"` column — but §6.2's base-dimension list is one of the two
+# things M0 froze, and adding to it to solve a §5.4 problem is the wrong trade.
+# The guard belongs at the metadata level instead: a p.u. column is one that
+# carries `base`, and `E_BASE_MISSING` is raised by metadata validation, not by
+# the unit-string parser. See AMB-022.
+[unit.pu]
+dimension = "dimensionless"
+factor = [1, 1]
+display = { unicode = "p.u.", long = "per unit" }
+
+
+# ---------------------------------------------------------------------------
+# AFFINE UNITS — AMB-016 RESOLVED 2026-07-29: the kelvin (O2) convention.
+#
+# `offset` is expressed in the DIMENSION'S BASE UNIT (kelvin here), so offsets
+# are directly comparable across units of one dimension. Conversion:
+#
+#     base = x * factor_from + offset_from
+#     y    = (base - offset_to) / factor_to
+#
+# degF: factor 5/9, offset 255.3722… = [45967, 180] (NOT 459.67 — that is the
+# rejected source-units convention; mixing the two gives 416 degF for boiling
+# water, which is the bug AMB-016 existed to catch).
+# Check:  100 degC -> 100 * 1 + 273.15 = 373.15 K
+#                  -> (373.15 - 45967/180) / (5/9) = 212 degF
+# degC's offset [27315, 100] is the same number under both conventions
+# (factor 1), which is why the spec's own example couldn't discriminate.
+# ---------------------------------------------------------------------------
+
+[unit.K]
+dimension = "temperature"
+factor = [1, 1]
+# K is not affine; per AMB-018 a non-affine unit is its own delta. Stated
+# explicitly here rather than omitted, because the spec does not say which.
+delta = "K"
+display = { unicode = "K", long = "kelvin", plural = "kelvins" }
+
+[unit.degC]
+dimension = "temperature"
+factor = [1, 1]
+offset = [27315, 100]
+delta = "delta_degC"
+aliases = ["degreeC", "C"]
+display = { unicode = "°C", latex = "^{\\circ}C", ascii = "degC", long = "degree Celsius", plural = "degrees Celsius" }
+
+[unit.degF]
+dimension = "temperature"
+factor = [5, 9]
+offset = [45967, 180]
+delta = "delta_degF"
+# "F" (like "C" on degC above) reads naturally in an energy-only catalog. In
+# a full SI registry they collide with the farad and the coulomb — exactly the
+# alias-collision case AMB-043 check 3 exists to catch at load time.
+aliases = ["degreeF", "F"]
+display = { unicode = "°F", latex = "^{\\circ}F", ascii = "degF", long = "degree Fahrenheit", plural = "degrees Fahrenheit" }
+
+# Delta counterparts: same dimension and same factor as their absolute
+# partner, no offset, freely composable (§6.4). None of that is stated
+# normatively in the spec — see AMB-018.
+
+[unit.delta_degC]
+dimension = "temperature"
+factor = [1, 1]
+display = { unicode = "Δ°C", ascii = "delta_degC", long = "kelvin (Celsius difference)" }
+
+[unit.delta_degF]
+dimension = "temperature"
+factor = [5, 9]
+display = { unicode = "Δ°F", ascii = "delta_degF", long = "degree Fahrenheit difference" }
+
+
+# ---------------------------------------------------------------------------
+# Quantity kinds (§7.3)
+#
+# Shape only. No parsing fixture depends on these; they are here so the
+# type-function fixtures have somewhere to point once AMB-019 is resolved.
+# ---------------------------------------------------------------------------
+
+[quantity."core:temperature"]
+display = { long = "Temperature" }
+
+[quantity."core:temperature_delta"]
+parent = "core:temperature"
+interval = true
+display = { long = "Temperature difference" }
+
+[quantity."core:power"]
+rate_of = "core:energy"
+display = { long = "Power" }
+
+[quantity."core:energy"]
+display = { long = "Energy" }
+
+# --- angle (AMB-066) ------------------------------------------------------
+# The radian is the base unit of `angle`, which this registry treats as a base
+# dimension rather than as dimensionless. That is a deliberate departure from
+# SI, on the same grounds as `count` and `currency`: it makes rad/s and Hz
+# incommensurable, so the omega = 2*pi*f confusion cannot be expressed.
+#
+# The degree carries an exact PI exponent rather than a decimal approximation:
+# deg = (1/180) * pi rad, exactly. `pi = 1` is the exponent, not a value.
+
+[unit.rad]
+dimension = "angle"
+factor = [1, 1]
+display = { unicode = "rad", long = "radian", plural = "radians" }
+
+[unit.deg]
+dimension = "angle"
+factor = [1, 180]
+pi = 1
+display = { unicode = "\u00b0", long = "degree", plural = "degrees" }
+
+[unit.Hz]
+dimension = "frequency"
+factor = [1, 1]
+display = { unicode = "Hz", long = "hertz" }
+

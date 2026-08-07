@@ -1,0 +1,191 @@
+{
+  "fixture_version": 1,
+  "category": "composition",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "5.6",
+      "8.1",
+      "8.3"
+    ]
+  },
+  "description": "Reading a table tagged against a different registry (AMB-059).",
+  "cases": [
+    {
+      "id": "composition.cross-registry.001",
+      "spec_ref": "\u00a78.3",
+      "status": "normative",
+      "input": {
+        "local": {
+          "name": "oil",
+          "version": "1.4",
+          "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+        },
+        "foreign": {
+          "name": "water",
+          "version": "2.1",
+          "toml": "[registry]\nschema_version = 1\nname = \"water\"\nversion = \"2.1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [29810117799, 250000000000]\ndisplay = { long = \"water barrel\" }\n"
+        },
+        "local_pin": "sha256:aaa",
+        "foreign_pin": "sha256:bbb",
+        "symbols": [
+          "bbl"
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_MISMATCH",
+        "names": [
+          "bbl",
+          "33.4%"
+        ]
+      },
+      "rationale": "The case AMB-059 was opened for. Both tables tag `bbl`; canonical form is registry-relative so the strings match and the dimensions match, while the quantities differ by 33%. Before the boundary check this joined silently. The diagnostic must carry the magnitude \u2014 \"factors differ\" is not actionable."
+    },
+    {
+      "id": "composition.cross-registry.002",
+      "spec_ref": "\u00a75.6",
+      "status": "normative",
+      "input": {
+        "local": {
+          "name": "oil",
+          "version": "1.4",
+          "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+        },
+        "foreign": {
+          "name": "oil",
+          "version": "1.4",
+          "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+        },
+        "local_pin": "sha256:same",
+        "foreign_pin": "sha256:same",
+        "symbols": [
+          "bbl",
+          "m"
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "boundary": "same_pin"
+      },
+      "rationale": "Equal pins short-circuit. The ordinary single-registry path must pay one string comparison and nothing else \u2014 whatever the multi-registry case costs, it must not be charged to everyone."
+    },
+    {
+      "id": "composition.cross-registry.003",
+      "spec_ref": "\u00a75.6",
+      "status": "normative",
+      "input": {
+        "local": {
+          "name": "oil",
+          "version": "1.4",
+          "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+        },
+        "foreign": {
+          "name": "oil",
+          "version": "1.5",
+          "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.5\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n[unit.acre_ft]\ndimension = \"length\"\nfactor = [616740919, 500000]\n"
+        },
+        "local_pin": "sha256:v14",
+        "foreign_pin": "sha256:v15",
+        "symbols": [
+          "bbl",
+          "m"
+        ]
+      },
+      "expect": {
+        "outcome": "ok",
+        "boundary": "compatible",
+        "checked": 2
+      },
+      "rationale": "A version bump that adds `acre_ft` without touching anything in use. This is why the rule compares symbols rather than pins: a pin comparison would reject every version bump, and version bumps are the common case."
+    },
+    {
+      "id": "composition.cross-registry.004",
+      "spec_ref": "\u00a76.4",
+      "status": "normative",
+      "input": {
+        "local": {
+          "name": "a",
+          "version": "1",
+          "toml": "[registry]\nschema_version = 1\nname = \"a\"\nversion = \"1\"\n[unit.degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [5463, 20]\n"
+        },
+        "foreign": {
+          "name": "b",
+          "version": "1",
+          "toml": "[registry]\nschema_version = 1\nname = \"b\"\nversion = \"1\"\n[unit.degC]\ndimension = \"temperature\"\nfactor = [1, 1]\noffset = [5463, 21]\n"
+        },
+        "local_pin": "sha256:a",
+        "foreign_pin": "sha256:b",
+        "symbols": [
+          "degC"
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_MISMATCH",
+        "names": [
+          "degC"
+        ]
+      },
+      "rationale": "Affine units fail differently: identical factor, moved zero. Comparing scale alone would pass this, and the column would be wrong by the offset at every value."
+    },
+    {
+      "id": "composition.cross-registry.005",
+      "spec_ref": "\u00a78.3",
+      "status": "normative",
+      "input": {
+        "local": {
+          "name": "pa",
+          "version": "1",
+          "toml": "[registry]\nschema_version = 1\nname = \"pa\"\nversion = \"1\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\nprefixes = \"si-engineering\"\ndisplay = { long = \"metre\" }\n"
+        },
+        "foreign": {
+          "name": "pb",
+          "version": "1",
+          "toml": "[registry]\nschema_version = 1\nname = \"pb\"\nversion = \"1\"\n[unit.m]\ndimension = \"length\"\nfactor = [100, 1]\nprefixes = \"si-engineering\"\ndisplay = { long = \"metre\" }\n"
+        },
+        "local_pin": "sha256:pa",
+        "foreign_pin": "sha256:pb",
+        "symbols": [
+          "km"
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_UNIT_MISMATCH",
+        "names": [
+          "km"
+        ]
+      },
+      "rationale": "`km` is authored in neither registry \u2014 AMB-048 derives prefixed units at resolution. The check must go through that branch, or every prefixed symbol crosses the boundary unexamined."
+    },
+    {
+      "id": "composition.cross-registry.006",
+      "spec_ref": "\u00a75.6 embedding",
+      "status": "normative",
+      "input": {
+        "local": {
+          "name": "oil",
+          "version": "1.4",
+          "toml": "[registry]\nschema_version = 1\nname = \"oil\"\nversion = \"1.4\"\n[unit.m]\ndimension = \"length\"\nfactor = [1, 1]\n[unit.bbl]\ndimension = \"length\"\nfactor = [9938205933, 62500000000]\ndisplay = { long = \"oil barrel\" }\n"
+        },
+        "local_pin": "sha256:aaa",
+        "foreign_pin": "sha256:unobtainable",
+        "foreign_unavailable": true,
+        "symbols": [
+          "bbl"
+        ]
+      },
+      "expect": {
+        "outcome": "error",
+        "code": "E_REGISTRY_INVALID",
+        "names": [
+          "not available here",
+          "embedded"
+        ]
+      },
+      "rationale": "The cost of \u00a75.6's `pin` embedding mode, made explicit. \"Could not check\" is a different claim from \"checked and fine\", and collapsing them is exactly the silence this entry is about. The diagnostic must name the remedy: obtain the registry, or republish with it embedded."
+    }
+  ]
+}

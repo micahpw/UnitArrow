@@ -1,0 +1,113 @@
+{
+  "fixture_version": 1,
+  "category": "parsing",
+  "spec": {
+    "document": "unitarrow-spec",
+    "version": "0.21.0-draft",
+    "sections": [
+      "6.2",
+      "6.3",
+      "7.2"
+    ]
+  },
+  "registry": "conformance-core@0.1.0",
+  "description": "Angle as a base dimension, and its separation from frequency (AMB-066).",
+  "cases": [
+    {
+      "id": "parsing.angle.001",
+      "spec_ref": "\u00a76.2",
+      "status": "normative",
+      "input": {
+        "unit": "rad"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "rad",
+        "dimension": {
+          "angle": 1
+        }
+      },
+      "rationale": "The radian carries dimension `angle`, not dimensionless. This is a deliberate departure from SI, on the same grounds as `count` and `currency` \u2014 both already non-SI base dimensions (AMB-066)."
+    },
+    {
+      "id": "parsing.angle.002",
+      "spec_ref": "\u00a76.2",
+      "status": "normative",
+      "input": {
+        "unit": "deg"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "deg",
+        "dimension": {
+          "angle": 1
+        }
+      },
+      "rationale": "Degrees and radians share a dimension, so they remain interconvertible \u2014 the separation is from *dimensionless*, not from each other."
+    },
+    {
+      "id": "parsing.angle.003",
+      "spec_ref": "\u00a76.2",
+      "status": "normative",
+      "input": {
+        "unit": "rad/s"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "rad*s^-1",
+        "dimension": {
+          "angle": 1,
+          "time": -1
+        }
+      },
+      "rationale": "Angular frequency. THE case this ruling exists for: with the radian dimensionless this reduced to {time:-1}."
+    },
+    {
+      "id": "parsing.angle.004",
+      "spec_ref": "\u00a76.2",
+      "status": "normative",
+      "input": {
+        "unit": "Hz"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "Hz",
+        "dimension": {
+          "time": -1
+        }
+      },
+      "rationale": "Frequency. Compare .003: the dimension vectors now DIFFER, so rad/s and Hz are incommensurable and no conversion is offered. Under SI's dimensionless radian both were {time:-1}, commensurable, and a factor-of-1 conversion was offered when the truth is omega = 2*pi*f \u2014 a 6.28x error passing every dimensional check."
+    },
+    {
+      "id": "parsing.angle.005",
+      "spec_ref": "\u00a76.3",
+      "status": "normative",
+      "input": {
+        "unit": "deg*s^-1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "deg*s^-1",
+        "dimension": {
+          "angle": 1,
+          "time": -1
+        }
+      },
+      "rationale": "Angle composes normally; only its dimension is new."
+    },
+    {
+      "id": "parsing.angle.006",
+      "spec_ref": "\u00a76.3",
+      "status": "normative",
+      "input": {
+        "unit": "rad*rad^-1"
+      },
+      "expect": {
+        "outcome": "ok",
+        "canonical": "1",
+        "dimension": {}
+      },
+      "rationale": "An angle divided by an angle IS dimensionless \u2014 the exponents cancel like any other base dimension. Separating angle does not make ratios of angles special."
+    }
+  ]
+}
