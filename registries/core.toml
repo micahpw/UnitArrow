@@ -1,4 +1,9 @@
-# UnitArrow registry — generated from UDUNITS-2. DO NOT EDIT BY HAND.
+# UnitArrow CORE registry — generated from UDUNITS-2. DO NOT EDIT BY HAND.
+#
+# This is the registry §7.4 calls `the core registry`: one per deployment,
+# PR-gated, and the source of every conversion factor a deployment trusts.
+# Domain registries add what it lacks and compose with it (§7.5); they do
+# not restate what is here.
 #
 #     python3 tools/import_udunits.py > registries/udunits.toml
 #
@@ -23,7 +28,7 @@
 
 [registry]
 schema_version = 1
-name = "udunits"
+name = "core"
 version = "2026-08-07"
 
 # ---------------------------------------------------------------------------
@@ -486,6 +491,7 @@ provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8",
 [unit.VA]
 dimension = "power"
 factor = [1, 1]
+prefixes = "si"
 aliases = ["voltampere"]
 display = { long = "voltampere" }
 provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: V.A" }
@@ -810,7 +816,7 @@ provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", 
 dimension = "temperature"
 factor = [1, 1]
 offset = [5463, 20]
-aliases = ["degrees_Celsius"]
+aliases = ["celsius", "degC", "deg_C", "degreeC", "degrees_Celsius"]
 provenance = { system = "udunits", source = "udunits2-derived.xml@81307f4fd0f8", note = "upstream def: K @ 273.15" }
 
 [unit.degree_kelvin]
@@ -829,7 +835,7 @@ provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", 
 [unit.degree_rankine]
 dimension = "temperature"
 factor = [5, 9]
-aliases = ["degR", "deg_R", "degreeR", "degree_R", "degreesR", "degrees_R", "degrees_rankine", "degsR", "degs_R"]
+aliases = ["degR", "deg_R", "degreeR", "degree_R", "degreesR", "degrees_R", "degrees_rankine", "degsR", "degs_R", "rankine"]
 provenance = { system = "udunits", source = "udunits2-common.xml@81307f4fd0f8", note = "upstream def: K/1.8" }
 
 [unit.denier]

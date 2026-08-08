@@ -385,6 +385,38 @@ pub fn compose(
         header.insert("prefix_collisions".into(), Value::Table(collisions));
     }
 
+    // Declared refusals carry forward for the same reason `prefix_collisions`
+    // does: they are rulings a source author made, and losing them silently
+    // turns a spelling that was refused with an explanation back into an
+    // ordinary unknown symbol. That is a regression in exactly the diagnostic
+    // the declaration exists to provide.
+    let mut refusals: BTreeMap<String, Value> = BTreeMap::new();
+    for (src, doc) in &parsed {
+        if let Some(t) = doc
+            .get("registry")
+            .and_then(Value::as_table)
+            .and_then(|h| h.get("ambiguous"))
+            .and_then(Value::as_table)
+        {
+            for (sym, body) in t {
+                if refusals.contains_key(sym) {
+                    continue;
+                }
+                let mut e = body.as_table().cloned().unwrap_or_default();
+                if let Some(Value::Str(r)) = e.get("reason").cloned() {
+                    e.insert(
+                        "reason".to_string(),
+                        Value::Str(format!("{r} (carried forward from {})", src.name)),
+                    );
+                }
+                refusals.insert(sym.clone(), Value::Table(e));
+            }
+        }
+    }
+    if !refusals.is_empty() {
+        header.insert("ambiguous".into(), Value::Table(refusals));
+    }
+
     let mut inputs: Vec<(String, String, String)> = Vec::new();
     let mut from_table: BTreeMap<String, Value> = BTreeMap::new();
     for s in by_name.values() {
@@ -620,6 +652,40 @@ mod tests {
             c.toml
         );
         assert!(c.toml.contains("upstream oil"), "{}", c.toml);
+    }
+
+    #[test]
+    fn declared_refusals_survive_composition() {
+        // Lost silently before this was fixed: a spelling a source refused with
+        // an explanation became an ordinary unknown symbol in the composition,
+        // which is a regression in the exact diagnostic the declaration exists
+        // to provide.
+        let with_refusal = Source::new(
+            "gas",
+            "1",
+            "[registry]\nschema_version = 1\nname = \"gas\"\nversion = \"1\"\n\
+             [registry.ambiguous.MBtu]\n\
+             reason = \"M is mega under SI and the Roman thousand in the US gas industry\"\n\
+             use = [\"MMBtu\"]\n\
+             [unit.MMBtu]\ndimension = \"length\"\nfactor = [1000000, 1]\n",
+        );
+        let c = compose("merged", "1", &[oil(), with_refusal], &[]).unwrap();
+        let r = c.registry().unwrap();
+        let a = r.ambiguity("MBtu").expect("the refusal survives");
+        assert!(a.reason.contains("Roman thousand"), "{}", a.reason);
+        assert!(
+            a.reason.contains("carried forward from gas"),
+            "provenance kept: {}",
+            a.reason
+        );
+        assert_eq!(a.use_instead, vec!["MMBtu".to_string()]);
+
+        let e = crate::canonicalize("MBtu", &r, 1).unwrap_err();
+        assert!(
+            e.message().contains("refused rather than guessed"),
+            "{}",
+            e.message()
+        );
     }
 
     #[test]

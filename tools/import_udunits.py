@@ -60,6 +60,17 @@ NAMED = {
 }
 
 
+# ASCII spellings upstream keeps in entries that cannot be imported — `degC`
+# lives on an alias entry defined as `degree_Celsius`, which is affine and so
+# cannot appear in an expression. The spellings are conventional and worth
+# having, so they are attached to the entry they name.
+EXTRA_ALIASES = {
+    "degree_Celsius": ["degC", "celsius", "degreeC", "deg_C"],
+    "degree_fahrenheit": ["degF", "fahrenheit", "degreeF", "deg_F"],
+    "degree_rankine": ["degR", "rankine", "degreeR", "deg_R"],
+}
+
+
 # Units that take SI prefixes. Curated rather than blanket: making a unit
 # prefixable silently claims one spelling per prefix (AMB-054), and UDUNITS
 # applies prefixes at parse time to almost everything, which is not a model
@@ -70,7 +81,7 @@ NAMED = {
 PREFIXABLE = {
     "m", "g", "s", "A", "K", "mol", "cd", "rad",
     "Hz", "N", "Pa", "J", "W", "C", "V", "F", "ohm", "S", "Wb", "T", "H",
-    "lm", "lx", "Bq", "Gy", "Sv", "kat", "L", "eV", "bar",
+    "lm", "lx", "Bq", "Gy", "Sv", "kat", "L", "eV", "bar", "VA",
 }
 
 
@@ -186,7 +197,12 @@ def main():
 
     out = []
     w = out.append
-    w("# UnitArrow registry — generated from UDUNITS-2. DO NOT EDIT BY HAND.")
+    w("# UnitArrow CORE registry — generated from UDUNITS-2. DO NOT EDIT BY HAND.")
+    w("#")
+    w("# This is the registry §7.4 calls `the core registry`: one per deployment,")
+    w("# PR-gated, and the source of every conversion factor a deployment trusts.")
+    w("# Domain registries add what it lacks and compose with it (§7.5); they do")
+    w("# not restate what is here.")
     w("#")
     w("#     python3 tools/import_udunits.py > registries/udunits.toml")
     w("#")
@@ -211,7 +227,7 @@ def main():
     w("")
     w("[registry]")
     w("schema_version = 1")
-    w('name = "udunits"')
+    w('name = "core"')
     w(f'version = "{date}"')
     w("")
     w("# ---------------------------------------------------------------------------")
@@ -272,7 +288,7 @@ def main():
             for x in (e["symbols"] + e["names"])
             if x != symbol and SYMBOL.match(x)
         ]
-        alias = sorted(dict.fromkeys(others))
+        alias = sorted(dict.fromkeys(others + EXTRA_ALIASES.get(symbol, [])))
         if alias:
             w("aliases = [" + ", ".join(f'"{a}"' for a in alias) + "]")
         long = next((n for n in e["names"] if SYMBOL.match(n)), None)

@@ -1,61 +1,37 @@
-# UnitArrow registry — electric power systems
+# UnitArrow registry — electric power systems (domain extension)
 #
-# A working registry for tagging power-systems data at egress: generation,
-# interchange, bus voltages, line flows, and the temporal quantities that go
-# with them. Written against spec 0.21.0-draft.
+# This is NOT a standalone registry. It adds what the core registry lacks and
+# composes with it (§7.5); it does not restate what is already there. Core
+# already resolves `kV`, `kA`, `MW`, `Hz`, `ohm`, `S`, `F`, `H`, `rad`, `degC`,
+# `Btu`, `mi`, `t` and the rest, including every SI-prefixed form.
 #
-# Three decisions worth knowing before reading:
+#     compose("core@2026-08-07", "power-systems@0.2.0")
 #
-# 1. PREFIXES ARE DERIVED, NOT LISTED (§7.2, AMB-048). `W` with the
-#    engineering set resolves kW, MW, GW, TW and the rest without an entry
-#    each. Twelve authored units below resolve well over a hundred symbols.
-#    Every prefix x base combination is still enumerated at load time for
-#    collision checking, so ambiguity remains impossible by construction.
+# It shrank from 37 units to 12 when core arrived, and comparing the two caught
+# a real error: the hand-written `therm` here was 1.05505585262e8 J — the EC
+# therm, 100,000 BTU(IT) — labelled as the US therm. UDUNITS has the US therm
+# at 1.054804e8 J, 100,000 BTU(59°F). The entry is gone; core's is correct.
 #
-# 2. MW, MVA AND MVAr ARE DIMENSIONALLY IDENTICAL, deliberately. Real,
-#    apparent and reactive power all reduce to {mass:1, length:2, time:-3}.
-#    No quantity kinds are declared here, so `MW + MVAr` type-checks. That is
-#    a live choice, not an oversight: the alternative is to declare §7.3
-#    kinds and have the checker separate them generically. Left open — see
-#    "If you want the checker to separate them" at the foot of this file.
-#
-# 3. NO `percent`, NO `pi`. Neither is a unit of anything; a capacity factor
-#    is dimensionless and pi belongs in whatever computes with it.
-#
-# What is deliberately absent: logarithmic units (dB-family — §7.2 cannot
-# express them, AMB-067) and per-row-based p.u. (see [unit.pu]).
+# What remains is genuinely domain-specific: reactive and apparent power, the
+# spellings industry data actually uses, per-unit, currency, and watt-hours,
+# which core does not carry as a symbol.
 
 [registry]
 schema_version = 1
 name = "power-systems"
-version = "0.1.0"
+version = "0.2.0"
 
-# Spellings this registry REFUSES on purpose, with the reason.
-#
-# These are not missing units. Each is a string that two conventions read
-# differently, so resolving it either way would be a guess — and a guess that
-# is silently wrong by a factor of 1000 is the worst outcome available. The
-# refusal is deliberate, and the reason travels with it so a user meets the
-# explanation at the moment they hit it, rather than rediscovering it.
-#
-# Both the error message and the generated documentation are built from these
-# entries, so they cannot disagree.
 [registry.ambiguous.MBtu]
 reason = "under SI prefixes M is mega, so MBtu reads as 10^6 Btu; the US gas industry reads M as the Roman thousand and means 10^3 Btu. Nothing in the string says which, and the two differ by 1000x."
 use = ["MMBtu", "Btu"]
 see = "https://unitarrow.org/generated/ambiguity/"
 
-[registry.ambiguous.MMcf]
-reason = "same Roman-numeral convention as MBtu: MM is 10^6 in the gas industry, but M is 10^6 under SI prefixes, so MMcf and Mcf are read inconsistently across sources."
-use = ["MMBtu"]
-see = "https://unitarrow.org/generated/ambiguity/"
-
 # ---------------------------------------------------------------------------
 # Dimensions
 #
-# Named for readability only. Commensurability is always decided on the
-# vector, so `power`, `apparent_power` and `reactive_power` would compare
-# equal if they were separate names — which is exactly why they are not.
+# Named identically to core's, so composition sees the same vectors. A name is
+# only ever a label on a vector (§6.2); commensurability is decided on the
+# vector, so a domain registry naming one differently changes nothing.
 # ---------------------------------------------------------------------------
 
 [dimension.dimensionless]
@@ -67,163 +43,65 @@ vector = { mass = 1, length = 2, time = -3 }
 [dimension.energy]
 vector = { mass = 1, length = 2, time = -2 }
 
-[dimension.voltage]
-vector = { mass = 1, length = 2, time = -3, current = -1 }
-
-[dimension.impedance]
-vector = { mass = 1, length = 2, time = -3, current = -2 }
-
-[dimension.frequency]
-vector = { time = -1 }
-
 [dimension.angle]
 vector = { angle = 1 }
-
-[dimension.charge]
-vector = { current = 1, time = 1 }
-
-[dimension.admittance]
-vector = { mass = -1, length = -2, time = 3, current = 2 }
-
-[dimension.capacitance]
-vector = { mass = -1, length = -2, time = 4, current = 2 }
-
-[dimension.inductance]
-vector = { mass = 1, length = 2, time = -2, current = -2 }
 
 [dimension.currency]
 vector = { currency = 1 }
 
 # ---------------------------------------------------------------------------
-# Electrical
+# Reactive and apparent power
+#
+# Dimensionally identical to core's watt, deliberately. No quantity kinds are
+# declared, so `MW + MVAr` type-checks; separating them is a §7.3 decision this
+# registry leaves open.
+#
+# `var` is the IEC 60027 symbol, so prefixing gives `kvar`, `Mvar`. Industry
+# data commonly writes `MVAr` or `MVAR`, which cannot be aliases — an alias
+# resolves to its unit's canonical symbol, so an alias on `var` would map MVAr
+# to var and lose the mega. They are authored, legal because case differs from
+# the derived `Mvar`.
 # ---------------------------------------------------------------------------
 
-[unit.W]
-dimension = "power"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "W", long = "watt", plural = "watts" }
-provenance = { system = "si" }
-
-# Apparent power. Same dimension as W by construction — the distinction is
-# semantic, not dimensional.
-[unit.VA]
-dimension = "power"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "VA", long = "voltampere", plural = "voltamperes" }
-provenance = { system = "si" }
-
-# Reactive power. The IEC 60027 symbol is lowercase `var`, so prefixing gives
-# `kvar`, `Mvar`, `Gvar`.
-#
-# Industry data commonly writes `MVAr` or `MVAR` instead. Those cannot be
-# aliases: an alias resolves to its unit's canonical symbol, so an alias on
-# `var` would map `MVAr` to `var` and lose the mega. They are therefore
-# declared explicitly below — legal because case differs from the derived
-# `Mvar`, so nothing collides. Add the ones your data actually uses; each is
-# an authored symbol with its own factor.
 [unit.var]
 dimension = "power"
 factor = [1, 1]
 prefixes = "si-engineering"
 display = { unicode = "var", long = "voltampere_reactive" }
-provenance = { system = "iec" }
+provenance = { system = "iec", source = "IEC 60027" }
 
 [unit.MVAr]
 dimension = "power"
 factor = [1000000, 1]
 display = { unicode = "MVAr", long = "megavoltampere_reactive" }
-provenance = { system = "industry" }
+provenance = { system = "industry", note = "spelling variant of Mvar" }
 
-# No `long` here: `MVAr` already claims "megavoltampere_reactive", and two
-# units sharing a display name makes verbose input ambiguous — the load
-# rejects it. `MVAR` is a spelling variant, not a distinct quantity.
 [unit.MVAR]
 dimension = "power"
 factor = [1000000, 1]
 display = { unicode = "MVAR" }
-provenance = { system = "industry", note = "Spelling variant of MVAr; same quantity." }
+provenance = { system = "industry", note = "spelling variant of Mvar" }
 
 [unit.kVAr]
 dimension = "power"
 factor = [1000, 1]
 display = { unicode = "kVAr", long = "kilovoltampere_reactive" }
-provenance = { system = "industry" }
-
-[unit.V]
-dimension = "voltage"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "V", long = "volt", plural = "volts" }
-provenance = { system = "si" }
-
-[unit.A]
-dimension = "current"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "A", long = "ampere", plural = "amperes" }
-provenance = { system = "si" }
-
-[unit.ohm]
-dimension = "impedance"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "Ω", ascii = "ohm", long = "ohm", plural = "ohms" }
-provenance = { system = "si" }
-
-# Admittance, susceptance, conductance — the shunt half of a line model.
-[unit.S]
-dimension = "admittance"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "S", long = "siemens" }
-provenance = { system = "si" }
-
-[unit.F]
-dimension = "capacitance"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "F", long = "farad", plural = "farads" }
-provenance = { system = "si" }
-
-[unit.H]
-dimension = "inductance"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "H", long = "henry", plural = "henries" }
-provenance = { system = "si" }
-
-[unit.C]
-dimension = "charge"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "C", long = "coulomb", plural = "coulombs" }
-provenance = { system = "si" }
+provenance = { system = "industry", note = "spelling variant of kvar" }
 
 # ---------------------------------------------------------------------------
 # Energy
 #
-# `Wh` is its own symbol, so `MWh` resolves — the spelling the industry
-# actually uses. Note §1 goal 4: `MWh` and `MW*h` are numerically identical
-# and are DIFFERENT canonical forms. Data is never silently reduced, so a
-# column tagged `MWh` and one tagged `MW*h` will not compare equal. Pick one
-# per pipeline.
+# Core has `J` and `W` and `h`, but no `Wh` symbol — and `MWh` is how the
+# industry writes energy. Note §1 goal 4: `MWh` and `MW*h` are numerically
+# identical and are DIFFERENT canonical forms, so pick one per pipeline.
 # ---------------------------------------------------------------------------
-
-[unit.J]
-dimension = "energy"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "J", long = "joule", plural = "joules" }
-provenance = { system = "si" }
 
 [unit.Wh]
 dimension = "energy"
 factor = [3600, 1]
 prefixes = "si-engineering"
 display = { unicode = "Wh", long = "watthour", plural = "watthours" }
-provenance = { system = "si" }
+provenance = { system = "industry", note = "W*h as a single symbol; core carries J and W separately" }
 
 [unit.varh]
 dimension = "energy"
@@ -236,202 +114,47 @@ provenance = { system = "iec" }
 dimension = "energy"
 factor = [3600000000, 1]
 display = { unicode = "MVArh", long = "megavoltampere_reactive_hour" }
-provenance = { system = "industry" }
+provenance = { system = "industry", note = "spelling variant of Mvarh" }
+
+[unit.MMBtu]
+dimension = "energy"
+factor = [52752792631, 50]
+display = { unicode = "MMBtu", long = "million_british_thermal_units" }
+provenance = { system = "us-customary", note = "10^6 Btu(IT). MM is the Roman million, not SI mega-mega — see [registry.ambiguous.MBtu]" }
 
 # ---------------------------------------------------------------------------
-# Time and frequency
+# Angle, currency, per-unit
 # ---------------------------------------------------------------------------
 
-[unit.s]
-dimension = "time"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "s", long = "second", plural = "seconds" }
-provenance = { system = "si" }
-
-[unit.min]
-dimension = "time"
-factor = [60, 1]
-display = { unicode = "min", long = "minute", plural = "minutes" }
-provenance = { system = "non-si-accepted" }
-
-[unit.h]
-dimension = "time"
-factor = [3600, 1]
-display = { unicode = "h", long = "hour", plural = "hours" }
-provenance = { system = "non-si-accepted" }
-
-[unit.d]
-dimension = "time"
-factor = [86400, 1]
-aliases = ["day"]
-display = { unicode = "d", long = "day", plural = "days" }
-provenance = { system = "non-si-accepted" }
-
-# A calendar year has no fixed length; this is the 365-day year used for
-# annualised energy and capacity factor. Leap years and P1Y are a temporal
-# concern (§8.5), not a unit one.
-[unit.yr]
-dimension = "time"
-factor = [31536000, 1]
-display = { unicode = "yr", long = "year", plural = "years" }
-provenance = { system = "non-si-accepted", note = "365-day year. A calendar year has no fixed length (§8.5)." }
-
-[unit.Hz]
-dimension = "frequency"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "Hz", long = "hertz" }
-provenance = { system = "si" }
-
-# ---------------------------------------------------------------------------
-# Angle (AMB-066)
-#
-# `angle` is a base dimension here, not dimensionless as in SI. That is what
-# makes `rad*s^-1` (angular frequency) incommensurable with `Hz` (frequency):
-# omega = 2*pi*f, and with a dimensionless radian the two share {time:-1} and
-# a conversion is silently offered at a factor of 1 — a 6.28x error no
-# dimensional check can see. For rotor angle and PLL work this matters.
-#
-# `deg` carries an exact PI exponent rather than a decimal approximation:
-# deg = (1/180) * pi rad, exactly. 180 deg is pi rad, not 3.141592653582.
-# ---------------------------------------------------------------------------
-
-[unit.rad]
-dimension = "angle"
-factor = [1, 1]
-display = { unicode = "rad", long = "radian", plural = "radians" }
-provenance = { system = "si" }
-
+# Core spells it `arc_degree`, with `degree` as an alias. `deg` is the spelling
+# power-systems data uses for phase angle.
 [unit.deg]
 dimension = "angle"
 factor = [1, 180]
 pi = 1
-display = { unicode = "°", ascii = "deg", long = "degree", plural = "degrees" }
-provenance = { system = "non-si-accepted" }
-
-# ---------------------------------------------------------------------------
-# Temperature — ambient and conductor, for rating and loss calculations
-# ---------------------------------------------------------------------------
-
-[unit.K]
-dimension = "temperature"
-factor = [1, 1]
-delta = "K"
-display = { unicode = "K", long = "kelvin" }
-provenance = { system = "si" }
-
-[unit.degC]
-dimension = "temperature"
-factor = [1, 1]
-offset = [5463, 20]
-delta = "delta_degC"
-aliases = ["celsius"]
-display = { unicode = "°C", ascii = "degC", long = "degree_Celsius" }
-provenance = { system = "non-si-accepted" }
+display = { unicode = "°", ascii = "deg", long = "phase_degree" }
+provenance = { system = "industry", note = "core has this as arc_degree; `deg` is the conventional spelling here" }
 
 [unit.delta_degC]
 dimension = "temperature"
 factor = [1, 1]
 display = { unicode = "Δ°C", ascii = "delta_degC", long = "kelvin_difference" }
-provenance = { system = "non-si-accepted" }
+provenance = { system = "si", note = "the difference counterpart of degC (§6.4)" }
 
-# ---------------------------------------------------------------------------
-# Length — line lengths, and per-length impedance (`ohm/km`)
-# ---------------------------------------------------------------------------
-
-[unit.m]
-dimension = "length"
-factor = [1, 1]
-prefixes = "si-engineering"
-display = { unicode = "m", long = "metre", plural = "metres" }
-provenance = { system = "si" }
-
-[unit.mi]
-dimension = "length"
-factor = [201168, 125]
-display = { unicode = "mi", long = "mile", plural = "miles" }
-provenance = { system = "us-customary" }
-
-# ---------------------------------------------------------------------------
-# Mass — emissions intensity (`t/MWh`, `kg/MWh`)
-#
-# The SI base unit of mass already carries a prefix, so `g` is the authored
-# entry and `kg` is derived from it. That is why `g` has factor 1/1000: the
-# dimension's base unit is the kilogram.
-# ---------------------------------------------------------------------------
-
-[unit.g]
-dimension = "mass"
-factor = [1, 1000]
-prefixes = "si-engineering"
-display = { unicode = "g", long = "gram", plural = "grams" }
-provenance = { system = "si" }
-
-[unit.t]
-dimension = "mass"
-factor = [1000, 1]
-prefixes = "si-engineering"
-display = { unicode = "t", long = "tonne", plural = "tonnes" }
-provenance = { system = "non-si-accepted" }
-
-# ---------------------------------------------------------------------------
-# Currency — prices and settlements (`USD/MWh`)
-#
-# EXACTLY ONE CURRENCY, DELIBERATELY. Currencies are units of the `currency`
-# dimension, so a second one at factor 1 makes `USD -> EUR` convert at
-# `y = x` — a fabricated exchange rate, offered silently. §2 is explicit that
-# rates are time-varying data, not registry constants. If a deployment needs
-# several currencies, they belong in separate registries, or the conversion
-# belongs to the application.
-# ---------------------------------------------------------------------------
-
+# EXACTLY ONE CURRENCY, DELIBERATELY. A second at factor 1 makes USD -> EUR
+# convert at y = x — a fabricated exchange rate, offered silently. §2 is
+# explicit that rates are time-varying data, not registry constants.
 [unit.USD]
 dimension = "currency"
 factor = [1, 1]
 display = { unicode = "USD", long = "US_dollar", plural = "US_dollars" }
 provenance = { system = "iso-4217" }
 
-# ---------------------------------------------------------------------------
-# Fuel and heat rate (`Btu/kWh`, `MMBtu`)
-#
-# `Btu` IS DELIBERATELY NOT PREFIXABLE. Under SI prefixes `MBtu` would mean
-# 10^6 Btu; the US gas industry reads `M` as the Roman thousand, so the same
-# string means 10^3 Btu there — a 1000x gap with no way for a reader to tell
-# which was meant. Making Btu prefixable would mint that string. Instead the
-# conventional multiples are authored explicitly, and `MBtu` does not resolve
-# at all, which is the correct answer to an ambiguous symbol.
-# ---------------------------------------------------------------------------
-
-[unit.Btu]
-dimension = "energy"
-factor = [52752792631, 50000000]
-display = { unicode = "Btu", long = "british_thermal_unit" }
-provenance = { system = "us-customary", note = "International Table Btu. NOT prefixable: `MBtu` is 10^6 under SI prefixes and 10^3 in the US gas industry, a 1000x gap with nothing in the symbol to say which." }
-
-[unit.MMBtu]
-dimension = "energy"
-factor = [52752792631, 50]
-display = { unicode = "MMBtu", long = "million_british_thermal_units" }
-provenance = { system = "us-customary", note = "US gas-industry multiple: MM is 10^6, not SI mega-mega." }
-
-[unit.therm]
-dimension = "energy"
-factor = [52752792631, 500]
-display = { unicode = "therm", long = "therm", plural = "therms" }
-provenance = { system = "us-customary" }
-
-# ---------------------------------------------------------------------------
-# Dimensionless
-# ---------------------------------------------------------------------------
-
 # Per-unit. §5.4: valid only with a column-uniform `base`. Columns whose base
-# varies per row — voltage p.u. across voltage levels, which is the normal
-# case in a multi-zone model — are OUT OF SCOPE and MUST be shipped as
-# physical units (kV, MW). Carry the base as its own column when downstream
-# needs it. `pu` here is for single-base data only.
+# varies per row — voltage p.u. across voltage levels, the normal case in a
+# multi-zone model — are OUT OF SCOPE and must be shipped as physical units.
 [unit.pu]
 dimension = "dimensionless"
 factor = [1, 1]
 display = { unicode = "pu", long = "per_unit" }
-provenance = { system = "dimensionless-convention" }
+provenance = { system = "industry" }

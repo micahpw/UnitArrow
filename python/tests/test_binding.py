@@ -11,12 +11,14 @@ import pytest
 
 import unitarrow
 
-REGISTRY = "registries/power-systems.toml"
-
-
 @pytest.fixture(scope="module")
 def reg(repo_root):
-    return unitarrow.Registry.from_path(str(repo_root / REGISTRY))
+    return unitarrow.Registry.compose_paths(
+        [
+            str(repo_root / "registries/core.toml"),
+            str(repo_root / "registries/power-systems.toml"),
+        ]
+    )
 
 
 def test_module_constants_match_the_core(reg):
@@ -124,7 +126,22 @@ def test_parse_metadata_preserves_unknown_keys():
 
 def test_registry_repr_is_informative(reg):
     r = repr(reg)
-    assert "power-systems" in r and "resolvable" in r
+    assert "effective" in r and "resolvable" in r
+
+
+def test_composition_needs_no_rulings_between_core_and_the_domain(repo_root):
+    """A domain registry that restated core would force a ruling on every shared
+    symbol. Adding only what is missing keeps composition free — and a user
+    should not have to name rulings for a supported combination."""
+    reg = unitarrow.Registry.compose_paths(
+        [
+            str(repo_root / "registries/core.toml"),
+            str(repo_root / "registries/power-systems.toml"),
+        ]
+    )
+    assert reg.unit_count > 1000  # a getter, not a method
+    for q in ("MW", "MVAr", "kV", "MWh", "pu", "USD/MWh", "therm"):
+        assert reg.canonicalize(q)
 
 
 def test_registry_is_frozen(reg):
