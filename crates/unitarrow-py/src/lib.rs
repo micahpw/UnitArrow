@@ -41,6 +41,56 @@ impl Registry {
             .map_err(err)
     }
 
+    /// Compose several registries into one effective registry (§7.5).
+    ///
+    /// A domain registry adds what the core registry lacks and restates
+    /// nothing, so a deployment loads the composition rather than either half.
+    /// Every symbol two sources define *differently* needs a ruling; symbols
+    /// only one defines, or that both define identically, need none.
+    ///
+    /// ```text
+    /// reg = Registry.compose([("core", "2026-08-07", core_toml),
+    ///                         ("power-systems", "0.2.0", ps_toml)])
+    /// ```
+    #[staticmethod]
+    #[pyo3(signature = (sources, rulings=None, name="effective", version="1"))]
+    fn compose(
+        sources: Vec<(String, String, String)>,
+        rulings: Option<Vec<(String, String, String)>>,
+        name: &str,
+        version: &str,
+    ) -> PyResult<Registry> {
+        let srcs: Vec<unitarrow_core::Source> = sources
+            .iter()
+            .map(|(n, v, t)| unitarrow_core::Source::new(n, v, t))
+            .collect();
+        let rules: Vec<unitarrow_core::Resolution> = rulings
+            .unwrap_or_default()
+            .iter()
+            .map(|(sym, from, why)| unitarrow_core::Resolution::new(sym, from, why))
+            .collect();
+        let composed = unitarrow_core::compose(name, version, &srcs, &rules).map_err(err)?;
+        composed
+            .registry()
+            .map(|inner| Registry { inner })
+            .map_err(err)
+    }
+
+    /// Compose from paths — the common case.
+    #[staticmethod]
+    #[pyo3(signature = (paths, name="effective", version="1"))]
+    fn compose_paths(paths: Vec<String>, name: &str, version: &str) -> PyResult<Registry> {
+        let mut sources = Vec::new();
+        for p in &paths {
+            let text = std::fs::read_to_string(p)
+                .map_err(|e| PyValueError::new_err(format!("cannot read {p}: {e}")))?;
+            // The registry names itself; the caller should not have to repeat it.
+            let probe = CoreRegistry::from_toml(&text).map_err(err)?;
+            sources.push((probe.name.clone(), probe.version.clone(), text));
+        }
+        Registry::compose(sources, None, name, version)
+    }
+
     /// Load from a path.
     #[staticmethod]
     fn from_path(path: &str) -> PyResult<Registry> {

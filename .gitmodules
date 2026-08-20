@@ -1,0 +1,3 @@
+[submodule "vendor/udunits-2"]
+	path = vendor/udunits-2
+	url = https://github.com/Unidata/UDUNITS-2.git

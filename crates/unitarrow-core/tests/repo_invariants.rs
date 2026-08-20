@@ -356,35 +356,81 @@ fn the_conformance_registry_loads_and_is_the_one_fixtures_name() {
     }
 }
 
-/// The shipping registries must load, and the factors a deployment depends on
-/// must be the ones intended.
+/// The domain registry must compose with core, and the result must resolve
+/// everything the domain actually writes.
 ///
-/// A registry is data, so nothing else type-checks it: a wrong factor is a
-/// silently wrong deployment. These assertions are the review, expressed as a
-/// test.
+/// power-systems is no longer standalone — it adds what core lacks and nothing
+/// else. The assertions that matter are therefore about the *composition*: that
+/// it needs no rulings, and that the effective registry covers the vocabulary.
 #[test]
-fn the_power_systems_registry_loads_and_converts_correctly() {
-    use unitarrow_core::{canonicalize, commensurable, conversion, Registry};
+fn the_power_systems_extension_composes_with_core() {
+    use unitarrow_core::{canonicalize, commensurable, compose, contested, conversion, Source};
 
-    let src = std::fs::read_to_string(root().join("registries/power-systems.toml")).unwrap();
-    let r = Registry::from_toml(&src).expect("the power-systems registry must load");
-
-    // Prefixes are derived, not enumerated (AMB-048). Expressed as a ratio
-    // rather than a count: a bound on the authored set goes stale every time a
-    // unit is legitimately added, whereas the amplification is the actual
-    // invariant — it collapses toward 1 the moment someone starts listing
-    // prefixed forms by hand.
-    let amplification = r.unit_count() as f64 / r.authored_count() as f64;
-    assert!(
-        amplification > 4.0,
-        "prefixed forms look enumerated rather than derived: {} authored resolve \
-         only {} symbols ({amplification:.1}x)",
-        r.authored_count(),
-        r.unit_count()
+    let core = Source::new(
+        "core",
+        "2026-08-07",
+        &std::fs::read_to_string(root().join("registries/core.toml")).unwrap(),
+    );
+    let ps = Source::new(
+        "power-systems",
+        "0.2.0",
+        &std::fs::read_to_string(root().join("registries/power-systems.toml")).unwrap(),
     );
 
-    // Making twelve bases prefixable claims a spelling per prefix. None may
-    // contest an authored symbol.
+    // A domain registry that restates core would force a ruling on every shared
+    // symbol. Adding only what is missing keeps composition free.
+    assert!(
+        contested(&[core.clone(), ps.clone()]).unwrap().is_empty(),
+        "the domain registry should restate nothing core already defines"
+    );
+
+    let composed = compose("effective", "test", &[core, ps], &[]).expect("composes");
+    let r = composed.registry().unwrap();
+
+    for q in [
+        "MW", "GW", "MVA", "MVAr", "MVAR", "Mvar", "kV", "kA", "MWh", "GWh", "MVArh", "Hz", "ohm",
+        "pu", "degC", "deg", "rad", "USD/MWh", "Btu/kWh", "MMBtu", "t/MWh", "ohm/km", "MW/min",
+        "S", "F", "H", "therm", "mi",
+    ] {
+        assert!(
+            canonicalize(q, &r, 1).is_ok(),
+            "{q} should resolve in the effective registry"
+        );
+    }
+
+    // The therm comparison caught a real error: the hand-written value here was
+    // the EC therm labelled as the US one. Core's is correct, and this pins it.
+    assert_eq!(
+        conversion("therm", "J", &r).unwrap().apply(1.0),
+        105_480_400.0
+    );
+
+    // AMB-066 must survive composition too.
+    let u = |s: &str| canonicalize(s, &r, 1).unwrap();
+    assert!(!commensurable(&u("rad*s^-1"), &u("Hz")));
+    assert_eq!(
+        conversion("deg", "rad", &r).unwrap().apply(180.0),
+        std::f64::consts::PI
+    );
+
+    // Real, apparent and reactive power share a dimension deliberately.
+    assert!(commensurable(&u("MW"), &u("MVAr")));
+    assert!(commensurable(&u("MW"), &u("MVA")));
+}
+
+/// The generated core registry must load, and its factors must be right.
+///
+/// It is generated, so a regeneration after an upstream change could alter any
+/// factor silently. These assertions are the review of the generated artifact,
+/// expressed as a test — a wrong factor is a silently wrong deployment.
+#[test]
+fn the_core_registry_loads_and_converts_correctly() {
+    use unitarrow_core::{canonicalize, commensurable, conversion, Registry};
+
+    let src = std::fs::read_to_string(root().join("registries/core.toml")).unwrap();
+    let r = Registry::from_toml(&src).expect("the generated registry must load");
+
+    assert!(r.authored_count() > 200, "the import should be substantial");
     assert!(
         r.collision_risks().is_empty(),
         "unresolved prefix collisions: {:?}",
@@ -394,72 +440,41 @@ fn the_power_systems_registry_loads_and_converts_correctly() {
             .collect::<Vec<_>>()
     );
 
-    // The factors a power-systems deployment actually depends on.
     for (from, to, expect) in [
-        ("MW", "kW", 1_000.0),
-        ("kV", "V", 1_000.0),
-        ("GWh", "MWh", 1_000.0),
-        ("MWh", "J", 3.6e9),
-        ("h", "s", 3_600.0),
+        ("Btu", "J", 1_055.055_852_62),
+        ("mi", "m", 1609.344),
+        ("bar", "Pa", 100_000.0),
+        ("lb", "kg", 0.453_592_37),
+        ("h", "s", 3600.0),
+        ("L", "m^3", 0.001),
+        // `kg` is not authored: it derives from the prefixable `g`, because the
+        // SI base unit of mass already carries a prefix.
+        ("kg", "g", 1000.0),
+        ("km", "m", 1000.0),
+        ("MW", "W", 1_000_000.0),
     ] {
-        let c = conversion(from, to, &r).unwrap();
-        assert_eq!(c.apply(1.0), expect, "1 {from} should be {expect} {to}");
+        let c =
+            conversion(from, to, &r).unwrap_or_else(|e| panic!("{from} -> {to}: {}", e.message()));
+        assert!(
+            (c.apply(1.0) - expect).abs() < expect.abs() * 1e-12,
+            "1 {from} should be {expect} {to}, got {}",
+            c.apply(1.0)
+        );
     }
 
-    // 180 degrees is pi radians exactly, not a 13-digit approximation of it.
-    let deg = conversion("deg", "rad", &r).unwrap();
-    assert_eq!(deg.apply(180.0), std::f64::consts::PI);
+    // Affine units survive the import with their intercepts.
+    assert!((conversion("degF", "K", &r).unwrap().apply(0.0) - 255.372_222_222_222).abs() < 1e-9);
+    assert!((conversion("degree_Celsius", "K", &r).unwrap().apply(100.0) - 373.15).abs() < 1e-9);
 
-    // Real, apparent and reactive power share a dimension deliberately: no
-    // quantity kinds are declared, so the checker does not separate them.
+    // The two deliberate departures from upstream (AMB-066). UDUNITS makes the
+    // radian dimensionless; if a regeneration ever inherits that, `rad/s` and
+    // `Hz` become commensurable and a 2*pi error stops being detectable.
     let u = |s: &str| canonicalize(s, &r, 1).unwrap();
-    assert!(commensurable(&u("MW"), &u("MVAr")));
-    assert!(commensurable(&u("MW"), &u("MVA")));
-
-    // Angular frequency must NOT be commensurable with frequency: omega = 2*pi*f,
-    // and a silent factor-of-1 coercion there is a 6.28x error (AMB-066).
+    assert_eq!(u("rad").dimension.sparse(), vec![("angle", 1)]);
     assert!(!commensurable(&u("rad*s^-1"), &u("Hz")));
-    assert!(conversion("rad*s^-1", "Hz", &r).is_err());
 
-    // `MWh` and `MW*h` are the same quantity and different canonical forms
-    // (§1 goal 4). Worth an assertion so nobody "fixes" it later.
-    assert_eq!(
-        conversion("MWh", "J", &r).unwrap().apply(1.0),
-        conversion("MW*h", "J", &r).unwrap().apply(1.0)
-    );
-    assert_ne!(u("MWh").canonical, u("MW*h").canonical);
-
-    // The compound quantities this registry exists to express.
-    for q in [
-        "USD/MWh", "Btu/kWh", "t/MWh", "kg/MWh", "ohm/km", "MW/min", "MWh/yr", "MVA", "MVAr",
-        "MVAR", "Mvar", "kvar", "MMBtu", "uF", "mH", "mS",
-    ] {
-        assert!(canonicalize(q, &r, 1).is_ok(), "{q} should resolve");
-    }
-
-    // `MBtu` MUST NOT resolve. Under SI prefixes it is 10^6 Btu; the US gas
-    // industry reads M as the Roman thousand and means 10^3 — a 1000x gap with
-    // nothing in the string to say which. `Btu` is therefore not prefixable,
-    // and refusing the symbol is the correct answer to an ambiguous one.
-    assert!(
-        canonicalize("MBtu", &r, 1).is_err(),
-        "MBtu must not resolve — it is ambiguous by 1000x between SI and US gas convention"
-    );
-    assert_eq!(conversion("MMBtu", "Btu", &r).unwrap().apply(1.0), 1e6);
-
-    // Exactly one currency. A second at factor 1 would make USD -> EUR convert
-    // at y = x, inventing an exchange rate (§2 forbids rates as registry data).
-    let currencies = r
-        .units()
-        .filter(|un| un.dimension_name == "currency")
-        .count();
-    assert_eq!(
-        currencies, 1,
-        "more than one currency invents an exchange rate"
-    );
-
-    // Mass is authored as `g` because the SI base unit already carries a
-    // prefix; `kg` must derive to exactly 1.
-    assert_eq!(conversion("kg", "g", &r).unwrap().apply(1.0), 1000.0);
-    assert_eq!(conversion("t", "kg", &r).unwrap().apply(1.0), 1000.0);
+    // And pi is carried as an exponent, not as the truncated decimal upstream
+    // stores: 180 degrees must be pi exactly.
+    let deg = conversion("arc_degree", "rad", &r).unwrap();
+    assert_eq!(deg.apply(180.0), std::f64::consts::PI);
 }

@@ -17,7 +17,15 @@ import unitarrow
 
 @pytest.fixture(scope="module")
 def reg(repo_root):
-    return unitarrow.Registry.from_path(str(repo_root / "registries/power-systems.toml"))
+    # The effective registry a deployment loads: core composed with the domain
+    # extension (§7.5). The extension is not standalone — it adds what core
+    # lacks and restates nothing.
+    return unitarrow.Registry.compose_paths(
+        [
+            str(repo_root / "registries/core.toml"),
+            str(repo_root / "registries/power-systems.toml"),
+        ]
+    )
 
 
 @pytest.fixture

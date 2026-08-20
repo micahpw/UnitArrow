@@ -212,13 +212,24 @@ fn sum(a: &Fragment, b: &Fragment, op: &str, registry: &Registry, d: Dialect) ->
 mod tests {
     use super::*;
 
+    /// The effective registry a power-systems deployment actually loads: core
+    /// composed with the domain extension (§7.5). The extension is not
+    /// standalone — it adds what core lacks and restates nothing — so testing
+    /// against it alone would test a configuration nobody runs.
     fn reg() -> Registry {
-        let src = std::fs::read_to_string(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../registries/power-systems.toml"
-        ))
-        .unwrap();
-        Registry::from_toml(&src).unwrap()
+        let read = |p: &str| {
+            std::fs::read_to_string(format!("{}/../../{p}", env!("CARGO_MANIFEST_DIR"))).unwrap()
+        };
+        let core = crate::Source::new("core", "test", &read("registries/core.toml"));
+        let ps = crate::Source::new(
+            "power-systems",
+            "test",
+            &read("registries/power-systems.toml"),
+        );
+        crate::compose("effective", "test", &[core, ps], &[])
+            .expect("core and the domain extension compose")
+            .registry()
+            .expect("the effective registry loads")
     }
 
     fn col(n: &str, u: &str, r: &Registry) -> Fragment {
